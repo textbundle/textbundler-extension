@@ -1,6 +1,6 @@
 # Requirements Document: TextBundler
 
-**Version:** 1.1
+**Version:** 1.2
 **Date:** 2026-02-14
 **Author:** Requirements Analyst (AI-Assisted)
 **Status:** Draft
@@ -248,14 +248,15 @@ There is no convenient browser-native tool that produces clean, self-contained M
 **Trigger:** User presses the configured keyboard shortcut.
 **Inputs:** Current active tab's URL and DOM.
 **Processing / Business Rules:**
-- Assign a sensible default shortcut (e.g., `Ctrl+Shift+S` / `Cmd+Shift+S`).
+- No default binding is shipped. The shortcut is configured by the user through the settings page (FR-011) or the browser's native extension shortcut management (e.g., `about:addons` in Firefox, `chrome://extensions/shortcuts` in Chrome).
+- The extension registers a named command in the manifest so the browser can expose it in its shortcut settings UI.
 - Behavior is identical to the toolbar button trigger (FR-006).
-- Shortcut must not conflict with common browser or OS shortcuts.
-**Outputs / Outcomes:** Archive download initiated.
+**Outputs / Outcomes:** Archive download initiated when the user has configured a shortcut.
 **Acceptance Criteria:**
-- [ ] Default keyboard shortcut triggers the archive pipeline.
-- [ ] Works on both Windows/Linux (Ctrl) and macOS (Cmd).
-**Priority:** Must
+- [ ] Extension registers a named command that appears in the browser's extension shortcut management UI.
+- [ ] Once configured by the user, the shortcut triggers the archive pipeline.
+- [ ] Works on both Windows/Linux (Ctrl-based) and macOS (Cmd-based).
+**Priority:** Should (Phase 2)
 
 ### 4.9 Extraction Failure Handling
 
@@ -424,11 +425,11 @@ There is no convenient browser-native tool that produces clean, self-contained M
 - **FR-005** TextBundle packaging as `.textpack` (zipped) with default `{date}-{title}` filename
 - **FR-006** Toolbar button trigger with processing feedback
 - **FR-007** Context menu trigger
-- **FR-008** Keyboard shortcut trigger
 - **FR-009** Extraction failure notification
 
 ### 11.2 Phase 2
 
+- **FR-008** Keyboard shortcut trigger (user-configured, no default binding)
 - **FR-010** Manual hover-to-select content region (Readability fallback)
 - **FR-011** Settings/options page (output format choice, filename pattern, image size limit, shortcut config)
 - `.textbundle` (uncompressed) output format option
@@ -459,7 +460,7 @@ There is no convenient browser-native tool that produces clean, self-contained M
 |---|---|---|---|---|---|
 | OQ-001 | Should the extension use TypeScript with a build step or vanilla JS? | Analyst | Dev team | Before implementation | Open |
 | OQ-002 | ~~What is the `creatorURL` value for `info.json`?~~ Resolved: `https://github.com/textbundle/textbundler` | Analyst | Project Owner | 2026-02-14 | Resolved |
-| OQ-003 | Should the default keyboard shortcut be `Ctrl+Shift+S` / `Cmd+Shift+S` or something else to avoid conflicts? | Analyst | Dev team | During implementation | Open |
+| OQ-003 | ~~Default keyboard shortcut?~~ Resolved: No default binding. User configures via settings page (Phase 2) or browser's native shortcut management. | Analyst | Project Owner | 2026-02-14 | Resolved |
 | OQ-004 | What WebExtension polyfill strategy should be used for cross-browser compatibility? (Mozilla's `webextension-polyfill` or manual abstraction?) | Analyst | Dev team | During implementation | Open |
 | OQ-005 | Should figure captions be rendered as italicized text below the image in Markdown, or as inline HTML `<figure>` blocks? | Analyst | Dev team | During implementation | Open |
 | OQ-006 | What concurrency limit for parallel image downloads balances speed vs. resource usage? | Analyst | Dev team | During implementation | Open |
@@ -549,3 +550,4 @@ User Trigger (button / menu / shortcut)
 |---|---|---|---|
 | 1.0 | 2026-02-14 | Requirements Analyst | Initial draft |
 | 1.1 | 2026-02-14 | Requirements Analyst | Renamed to TextBundler; updated creatorIdentifier/creatorURL to textbundle org; resolved OQ-002 |
+| 1.2 | 2026-02-14 | Requirements Analyst | Moved FR-008 (keyboard shortcut) to Phase 2; no default binding; resolved OQ-003 |
