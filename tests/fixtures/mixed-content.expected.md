@@ -8,39 +8,14 @@ Web archiving is the process of collecting and preserving web content for future
 
 ## Why Archive Web Content?
 
-The web is ephemeral. Studies show that the average lifespan of a web page is approximately 100 days. Archiving ensures that valuable content remains accessible<sup>[\[1\]](#ref1)</sup>.
+The web is ephemeral. Studies show that the average lifespan of a web page is approximately 100 days. Archiving ensures that valuable content remains accessible<sup><a href="#ref1">[1]</a></sup>.
 
 > [!NOTE]
 > Web archiving is not the same as web scraping. Archiving preserves content; scraping extracts data.
 
 ## Common Formats
 
-<table>
-      <thead>
-        <tr>
-          <th>Format</th>
-          <th>Extension</th>
-          <th>Self-contained</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>TextBundle</td>
-          <td>.textpack</td>
-          <td>Yes</td>
-        </tr>
-        <tr>
-          <td>MHTML</td>
-          <td>.mhtml</td>
-          <td>Yes</td>
-        </tr>
-        <tr>
-          <td>WARC</td>
-          <td>.warc</td>
-          <td>Yes</td>
-        </tr>
-      </tbody>
-    </table>
+<table><thead><tr><th>Format</th><th>Extension</th><th>Self-contained</th></tr></thead><tbody><tr><td>TextBundle</td><td>.textpack</td><td>Yes</td></tr><tr><td>MHTML</td><td>.mhtml</td><td>Yes</td></tr><tr><td>WARC</td><td>.warc</td><td>Yes</td></tr></tbody></table>
 
 ## Implementation Example
 
@@ -67,16 +42,13 @@ Images require special handling. Here is an example of a figure with a caption:
 
 Some content requires special treatment during archiving.
 
-<details>
-      <summary>What about dynamic content?</summary>
-      <p>Dynamic content loaded via JavaScript may not be captured by simple HTTP requests. Consider using a headless browser for these cases.</p>
-    </details>
+<details><summary>What about dynamic content?</summary><p>Dynamic content loaded via JavaScript may not be captured by simple HTTP requests. Consider using a headless browser for these cases.</p></details>
 
 ### Video Embeds
 
 Embedded videos cannot be downloaded but their references should be preserved:
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Archiving demo" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Archiving demo" frameborder="0" allowfullscreen=""></iframe>
 
 ### Chemical and Mathematical Notation
 

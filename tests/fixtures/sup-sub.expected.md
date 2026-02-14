@@ -6,7 +6,7 @@ Einstein's famous equation is E = mc<sup>2</sup>, which relates energy and mass.
 
 Water's chemical formula is H<sub>2</sub>O, consisting of hydrogen and oxygen atoms.
 
-This claim requires a citation<sup>[\[1\]](#ref1)</sup> and another reference<sup>[\[2\]](#ref2)</sup> for completeness.
+This claim requires a citation<sup><a href="#ref1">[1]</a></sup> and another reference<sup><a href="#ref2">[2]</a></sup> for completeness.
 
 In mathematics, we write x<sup>n</sup> + y<sup>n</sup> = z<sup>n</sup> for Fermat's Last Theorem, and a<sub>0</sub> + a<sub>1</sub>x + a<sub>2</sub>x<sup>2</sup> for polynomial expressions.
 
