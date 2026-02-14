@@ -6,6 +6,10 @@ export default defineConfig({
     define: {
       __DEV__: 'false',
     },
+    build: {
+      // No network transfer for local extension files; skip minification for readable stack traces
+      minify: false,
+    },
   }),
   manifest: {
     name: 'TextBundler',
