@@ -1,0 +1,11 @@
+node_modules
+dist
+.output
+.wxt
+package-lock.json
+.claude
+.codex
+docs
+openspec
+CLAUDE.md
+AGENTS.md

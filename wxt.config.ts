@@ -5,12 +5,6 @@ export default defineConfig({
     name: 'TextBundler',
     description:
       'Capture web pages as self-contained Markdown archives in TextBundle .textpack format',
-    permissions: [
-      'activeTab',
-      'contextMenus',
-      'downloads',
-      'notifications',
-      'scripting',
-    ],
+    permissions: ['activeTab', 'contextMenus', 'downloads', 'notifications', 'scripting'],
   },
 });
