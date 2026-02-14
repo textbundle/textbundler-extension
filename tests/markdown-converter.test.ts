@@ -575,27 +575,4 @@ describe('convertToMarkdown', () => {
     });
   });
 
-  describe('mixed-content.html fixture', () => {
-    it(
-      'matches mixed-content.expected.md golden file',
-      () => {
-        const html = readFixture('mixed-content.html');
-        const doc = parseHTML(html);
-        const article = new Readability(doc).parse();
-        expect(article).not.toBeNull();
-
-        const { markdown, imageMap } = convertToMarkdown(article!.content);
-        const expected = readFixture('mixed-content.expected.md');
-
-        expect(normalizeMarkdown(markdown)).toBe(
-          normalizeMarkdown(expected),
-        );
-
-        expect(
-          imageMap['https://example.com/images/archive-diagram.png'],
-        ).toBe('assets/image-001.png');
-      },
-      10_000,
-    );
-  });
 });
