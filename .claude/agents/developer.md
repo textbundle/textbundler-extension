@@ -3,6 +3,7 @@ name: developer
 description: >
   Extension developer for TextBundler. Implements spec tasks using TDD,
   following the WXT framework, TypeScript strict mode, and project conventions.
+model: sonnet
 tools: Read, Glob, Grep, Bash, Write, Edit
 ---
 

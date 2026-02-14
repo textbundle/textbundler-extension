@@ -4,6 +4,7 @@ description: >
   Code reviewer for TextBundler feature branches. Reviews diffs against main,
   evaluates acceptance criteria and spec compliance, runs validation gates,
   and produces a structured COMMENTS.md with APPROVE / REQUEST CHANGES / REJECT verdict.
+model: haiku
 tools: Read, Glob, Grep, Bash, Write, Edit
 ---
 
