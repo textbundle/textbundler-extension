@@ -1,8 +1,61 @@
-# Review Notes: TASK-003
+# Code Review: feat/task-004-tier1-fixtures
 
-## Observations Carried Forward
+**Task:** TASK-004: Tier 1 Test Fixtures (Curated HTML Fragments)
+**Reviewer:** Code Reviewer Agent
+**Date:** 2026-02-14
+**Verdict:** APPROVE
 
-- WXT builds to `.output/chrome-mv3/` by default, not `dist/`. The spec acceptance criteria mention `dist/` but this is the standard WXT behavior. CLAUDE.md also references `dist/` as the build output; a future task may want to align that documentation with the actual WXT output directory.
-- The content script template was removed since the spec architecture (Section 2.2, CLAUDE.md conventions) uses on-demand injection via `scripting.executeScript()` rather than manifest-declared content scripts. This is correct per the spec.
-- The popup entrypoint was removed as it is not part of the spec architecture. The extension uses toolbar button and context menu triggers, which will be wired in later tasks.
-- The spec describes the non-article test input as "a minimal non-article HTML (inline string with a `<form>` login page, no article structure)" but Readability under linkedom does not return null for form-based HTML -- it still extracts content. The test uses an empty body instead, which correctly validates the null return path. This is a known linkedom/Readability behavioral difference worth noting for future Readability-dependent tasks (DA-04, linkedom issue #43).
+---
+
+## Summary
+
+The branch creates all 13 curated HTML fixture files per the TASK-004 manifest and a comprehensive test file validating linkedom parseability and Readability extraction behavior. All fixtures are well-structured, complete HTML documents targeting their specified conversion rules. The non-article.html fixture uses a redirect page with empty body instead of a login form due to linkedom+Readability compatibility constraints (DA-04), which is a reasonable compromise that meets the acceptance criterion.
+
+---
+
+## Validation Gates
+
+```
+npm test:      PASS (29 tests, 2 suites)
+npm run typecheck: PASS
+```
+
+---
+
+## Checklist Results
+
+- Acceptance Criteria: PASS
+- Type Contracts: N/A
+- Module Conventions: N/A
+- Testing: PASS
+- Golden File Conventions: N/A
+- Data Conventions: N/A
+- Code Quality: PASS
+- Documentation: PASS
+- Git Hygiene: PASS
+
+---
+
+## Findings
+
+### Blocking
+
+None.
+
+### Non-Blocking
+
+None.
+
+### Observations
+
+**O-1: non-article.html uses redirect page pattern instead of login form**
+- The spec describes non-article.html as "a login form or search results page with no identifiable article content." However, Readability with linkedom extracts content from any page with text nodes in the body, even form-only pages. The fixture uses a redirect page with empty body to satisfy the acceptance criterion (Readability returns null). This is documented in an HTML comment referencing DA-04. If future Readability or linkedom updates change this behavior, the fixture may need revisiting.
+
+**O-2: mixed-content.html provides good extraction isolation test coverage**
+- The fixture includes nav, sidebar aside, and footer elements outside the article tag, which will exercise Readability's content isolation in downstream tasks (TASK-009, TASK-021).
+
+---
+
+## Verdict Rationale
+
+All 13 fixture files are created per the manifest, all parse correctly with linkedom, Readability extracts content from the 12 article fixtures and returns null for non-article.html. Both validation gates pass. No blocking or non-blocking issues found.
