@@ -1,4 +1,4 @@
-# Video Embeds in Articles
+## Video Embeds in Articles
 
 This article contains embedded video iframes from YouTube and Vimeo. These should be preserved as inline HTML in the Markdown output.
 

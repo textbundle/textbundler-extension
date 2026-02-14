@@ -1,4 +1,4 @@
-# Collapsible Sections
+## Collapsible Sections
 
 This article demonstrates the details and summary elements that should be preserved as inline HTML in the Markdown output.
 

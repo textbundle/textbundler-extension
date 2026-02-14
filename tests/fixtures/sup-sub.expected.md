@@ -1,4 +1,4 @@
-# Superscripts and Subscripts
+## Superscripts and Subscripts
 
 This article demonstrates superscript and subscript elements used for footnotes, citations, and scientific notation. These should be preserved as inline HTML.
 
