@@ -1,0 +1,39 @@
+{
+  "name": "textbundler",
+  "description": "Capture web pages as self-contained Markdown archives in TextBundle .textpack format",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write .",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "js-yaml": "^4.1.0",
+    "jszip": "^3.10.1",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/turndown": "^5.0.5",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "eslint": "^8.57.0",
+    "linkedom": "^0.18.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0",
+    "wxt": "^0.20.17"
+  }
+}
