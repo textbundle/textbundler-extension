@@ -6,6 +6,7 @@ import type { ExtractionResult, ExtractionFailure } from '@/lib/types';
 export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_idle',
+  registration: 'runtime',
   main() {
     browser.runtime.onMessage.addListener((message) => {
       if (message?.type !== 'trigger-archive') return;

@@ -10,26 +10,16 @@ import type { ExtractionResult, ExtractionFailure, ArchiveResponse } from '@/lib
 export default defineBackground(() => {
   logger.info('background', 'Service worker started');
 
-  /** Tracks tabs with an active pipeline to prevent concurrent runs. FR-006. */
+  const action = browser.action ?? browser.browserAction;
+  const menus = browser.contextMenus ?? browser.menus;
+
   const processingTabs = new Set<number>();
 
-  /**
-   * Set the toolbar badge to indicate processing state. FR-006.
-   *
-   * @param tabId - Tab to set badge on
-   * @param text - Badge text
-   * @param color - Badge background color
-   */
   function setBadge(tabId: number, text: string, color: string): void {
-    browser.action.setBadgeText({ text, tabId });
-    browser.action.setBadgeBackgroundColor({ color, tabId });
+    action.setBadgeText({ text, tabId });
+    action.setBadgeBackgroundColor({ color, tabId });
   }
 
-  /**
-   * Show a browser notification. FR-006, FR-009.
-   *
-   * @param message - Notification body text
-   */
   function showNotification(message: string): void {
     browser.notifications.create({
       type: 'basic',
@@ -39,22 +29,24 @@ export default defineBackground(() => {
     });
   }
 
-  /**
-   * Set the badge to error state ("!") and clear after 5 seconds. FR-006.
-   *
-   * @param tabId - Tab to set badge on
-   */
   function showErrorBadge(tabId: number): void {
     setBadge(tabId, '!', '#D94A4A');
-    setTimeout(() => browser.action.setBadgeText({ text: '', tabId }), 5000);
+    setTimeout(() => action.setBadgeText({ text: '', tabId }), 5000);
   }
 
-  /**
-   * Shared function to inject the content script and send a trigger message.
-   * Guards against concurrent pipeline runs on the same tab. FR-006, FR-007.
-   *
-   * @param tabId - The tab to archive
-   */
+  async function injectContentScript(tabId: number): Promise<void> {
+    if (browser.scripting) {
+      await browser.scripting.executeScript({
+        target: { tabId },
+        files: ['/content-scripts/content.js'],
+      });
+    } else {
+      await browser.tabs.executeScript(tabId, {
+        file: '/content-scripts/content.js',
+      });
+    }
+  }
+
   async function archivePageWithFeedback(tabId: number): Promise<void> {
     if (processingTabs.has(tabId)) {
       logger.info('background', 'Tab already processing, ignoring click', { tabId });
@@ -66,11 +58,7 @@ export default defineBackground(() => {
     logger.info('background', 'Archiving page', { tabId });
 
     try {
-      await browser.scripting.executeScript({
-        target: { tabId },
-        files: ['/content-scripts/content.js'],
-      });
-
+      await injectContentScript(tabId);
       await browser.tabs.sendMessage(tabId, { type: 'trigger-archive' });
       logger.debug('background', 'Trigger message sent', { tabId });
     } catch (err) {
@@ -82,15 +70,6 @@ export default defineBackground(() => {
     }
   }
 
-  /**
-   * Run the full conversion pipeline on an ExtractionResult.
-   * Converts HTML to Markdown, downloads images, patches failed image refs,
-   * builds frontmatter, packages the bundle, and triggers download. FR-006.
-   *
-   * @param extraction - The extraction result from the content script
-   * @param tabId - The originating tab for badge updates
-   * @returns ArchiveResponse indicating success or failure
-   */
   async function runPipeline(extraction: ExtractionResult, tabId: number): Promise<ArchiveResponse> {
     const pipelineStart = Date.now();
 
@@ -133,7 +112,7 @@ export default defineBackground(() => {
 
       processingTabs.delete(tabId);
       setBadge(tabId, 'OK', '#4A90D9');
-      setTimeout(() => browser.action.setBadgeText({ text: '', tabId }), 3000);
+      setTimeout(() => action.setBadgeText({ text: '', tabId }), 3000);
       showNotification(`Archived: ${extraction.metadata.title}`);
 
       return { success: true, filename };
@@ -153,13 +132,6 @@ export default defineBackground(() => {
     }
   }
 
-  /**
-   * Handle an ExtractionFailure message from the content script.
-   * Shows error badge and notification. FR-006, FR-009.
-   *
-   * @param failure - The extraction failure details
-   * @param tabId - The originating tab
-   */
   function handleExtractionFailure(failure: ExtractionFailure, tabId: number): void {
     logger.info('background', 'Extraction failed', { url: failure.url, reason: failure.reason });
     processingTabs.delete(tabId);
@@ -167,20 +139,20 @@ export default defineBackground(() => {
     showNotification('Could not extract content from this page.');
   }
 
-  browser.action.onClicked.addListener(async (tab) => {
+  action.onClicked.addListener(async (tab: { id?: number }) => {
     if (!tab.id) return;
     await archivePageWithFeedback(tab.id);
   });
 
-  browser.runtime.onInstalled.addListener(() => {
-    browser.contextMenus.create({
+  menus.removeAll().then(() => {
+    menus.create({
       id: 'archive-page',
       title: 'Archive Page as TextBundle',
       contexts: ['page'],
     });
   });
 
-  browser.contextMenus.onClicked.addListener(async (info, tab) => {
+  menus.onClicked.addListener(async (info: { menuItemId: string | number }, tab?: { id?: number }) => {
     if (info.menuItemId !== 'archive-page' || !tab?.id) return;
     await archivePageWithFeedback(tab.id);
   });
