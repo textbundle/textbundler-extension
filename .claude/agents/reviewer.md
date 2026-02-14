@@ -76,11 +76,28 @@ Review the changes against every applicable item in the checklist below. Not eve
 
 ### Step 5: Write COMMENTS.md
 
+**If `COMMENTS.md` does not exist:**
+
 1. Copy the template: read `.claude/templates/COMMENTS.md` and write it to `COMMENTS.md` at the repo root.
 2. Fill in every `{placeholder}` with your findings.
 3. Remove instruction paragraphs (lines that start with "Remove this instructions paragraph").
 4. For Blocking/Non-Blocking sections with no findings, replace contents with "None."
-5. Commit to the branch.
+
+**If `COMMENTS.md` already exists (re-review after fixes):**
+
+1. Read the existing file. It may contain carried-forward Observations from prior rounds.
+2. Update the header fields (Date, Verdict) for the current review round.
+3. Rewrite the Summary for the current state of the branch.
+4. Update Validation Gates and Checklist Results with fresh results.
+5. Replace the Blocking and Non-Blocking sections entirely with your new findings (or "None.").
+6. **Merge Observations:** Keep all existing Observations. Append any new ones below them. Do not remove or rewrite prior observations — they accumulate across review rounds.
+
+**Then commit:**
+
+```bash
+git add COMMENTS.md
+git commit -m "review(task-NNN): code review findings"
+```
 
 ---
 
