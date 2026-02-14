@@ -10,21 +10,21 @@ describe('packageBundle', () => {
     mockAssets = [
       {
         originalUrl: 'https://example.com/image1.jpg',
-        filename: 'image-001.jpg',
+        filename: 'assets/image-001.jpg',
         data: new ArrayBuffer(100),
         mimeType: 'image/jpeg',
         failed: false,
       },
       {
         originalUrl: 'https://example.com/image2.png',
-        filename: 'image-002.png',
+        filename: 'assets/image-002.png',
         data: new ArrayBuffer(200),
         mimeType: 'image/png',
         failed: false,
       },
       {
         originalUrl: 'https://example.com/failed.gif',
-        filename: 'image-003.gif',
+        filename: 'assets/image-003.gif',
         data: new ArrayBuffer(0),
         mimeType: 'image/gif',
         failed: true,
@@ -176,7 +176,7 @@ describe('packageBundle', () => {
     const assets: ImageAsset[] = [
       {
         originalUrl: 'https://example.com/test.jpg',
-        filename: 'image-001.jpg',
+        filename: 'assets/image-001.jpg',
         data: testData.buffer,
         mimeType: 'image/jpeg',
         failed: false,

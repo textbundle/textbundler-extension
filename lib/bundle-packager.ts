@@ -41,7 +41,7 @@ export async function packageBundle(
 
   for (const asset of assets) {
     if (!asset.failed) {
-      zip.file(`assets/${asset.filename}`, asset.data);
+      zip.file(asset.filename, asset.data);
     }
   }
 

@@ -64,24 +64,20 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     const rawAssets = await downloadImages(imageMap);
     expect(rawAssets).toHaveLength(2);
 
-    const assets = rawAssets.map(asset => ({
-      ...asset,
-      filename: asset.filename.replace(/^assets\//, ''),
-    }));
-
-    const successAsset = assets.find((a) => a.originalUrl === 'https://example.com/images/archive-diagram.png');
+    const successAsset = rawAssets.find((a) => a.originalUrl === 'https://example.com/images/archive-diagram.png');
     expect(successAsset).toBeDefined();
     expect(successAsset!.failed).toBe(false);
-    expect(successAsset!.filename).toBe('image-001.png');
+    expect(successAsset!.filename).toBe('assets/image-001.png');
     expect(successAsset!.mimeType).toBe('image/png');
     expect(successAsset!.data.byteLength).toBeGreaterThan(0);
 
-    const failedAsset = assets.find((a) => a.originalUrl === 'https://example.com/images/missing.jpg');
+    const failedAsset = rawAssets.find((a) => a.originalUrl === 'https://example.com/images/missing.jpg');
     expect(failedAsset).toBeDefined();
     expect(failedAsset!.failed).toBe(true);
-    expect(failedAsset!.filename).toBe('image-002.jpg');
+    expect(failedAsset!.filename).toBe('assets/image-002.jpg');
 
-    const failedAssets = rawAssets.filter((a) => a.failed);
+    const failedAssets = rawAssets.filter(a => a.failed);
+    const successfulAssets = rawAssets.filter(a => !a.failed);
     const patchedMarkdown = patchFailedImageUrls(markdownWithMissing, imageMap, failedAssets);
     expect(patchedMarkdown).not.toContain('assets/image-002.jpg');
     expect(patchedMarkdown).toContain('https://example.com/images/missing.jpg');
@@ -98,7 +94,7 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     const { blob, filename } = await packageBundle(
       frontmatter,
       patchedMarkdown,
-      assets,
+      successfulAssets,
       sourceUrl,
       article!.title,
       '2026-02-14',
