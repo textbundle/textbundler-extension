@@ -1,6 +1,6 @@
-# Code Review: feat/task-018b-pipeline-orchestration
+# Code Review: feat/task-018c-ui-feedback
 
-**Task:** TASK-018b: Background Script -- Pipeline Orchestration
+**Task:** TASK-018c: Background Script — UI Feedback
 **Reviewer:** Code Reviewer Agent
 **Date:** 2026-02-14
 **Verdict:** APPROVE
@@ -9,7 +9,7 @@
 
 ## Summary
 
-This branch adds the pipeline orchestration logic to `entrypoints/background.ts`, wiring the full conversion pipeline from `ExtractionResult` message receipt through Markdown conversion, image downloading, failed image patching, frontmatter generation, bundle packaging, and download triggering. The implementation follows the spec exactly (steps a-g from TASK-018b), with proper error handling via try/catch, per-stage debug timing, total pipeline timing at info level, and the correct `ArchiveResponse` return values matching Section 4.2.
+This branch adds badge state management, browser notification display, and a concurrent-click guard to the background script. All five acceptance criteria from the spec are met: badge shows "..." during processing, "OK" on success (clears after 3s), "!" on failure (clears after 5s), notifications display on both success and failure, and concurrent clicks on the same tab are ignored via a `processingTabs` Set. The implementation is clean, well-documented, and correctly handles all three failure paths (script injection error, extraction failure, pipeline error).
 
 ---
 
@@ -26,10 +26,10 @@ npm run typecheck: PASS
 
 - Acceptance Criteria: PASS
 - Type Contracts: PASS
-- Module Conventions: PASS
-- Testing: N/A (entrypoint file, browser-API-dependent, no unit tests per convention)
+- Module Conventions: PASS (default export allowed for WXT entrypoint)
+- Testing: N/A (entrypoint file — browser APIs not testable in Node.js)
 - Golden File Conventions: N/A
-- Data Conventions: PASS
+- Data Conventions: N/A
 - Code Quality: PASS
 - Documentation: PASS
 - Git Hygiene: PASS
@@ -48,26 +48,31 @@ None.
 
 ### Observations
 
-**O-1: Pipeline Step Fidelity**
+**O-1: Service Worker Lifecycle and processingTabs**
 
-All seven pipeline steps from the TASK-018b spec are implemented in the correct order: convertToMarkdown, downloadImages, patchFailedImageUrls, buildFrontmatter, packageBundle, triggerDownload. The function signatures and argument passing match the spec exactly.
+The `processingTabs` Set is scoped to the `defineBackground()` closure, which means it resets if the service worker is terminated and restarted by the browser. This is acceptable behavior since a terminated service worker also means any in-flight pipeline was aborted.
 
-**O-2: Error Handling Coverage**
+**O-2: Notification Icon Path**
 
-The try/catch wraps the entire pipeline as specified. The error message on unexpected failure uses the exact string from the spec: "An unexpected error occurred while archiving this page." Stack traces are logged at error level for debugging. Individual image failures are handled internally by `downloadImages` and do not abort the pipeline.
+The `iconUrl` uses `browser.runtime.getURL('/icon/128.png')` which matches the icon paths in `public/icon/`. The TypeScript types require `iconUrl` for `type: "basic"` notifications, which is correctly provided.
 
-**O-3: Async Message Response Pattern**
+**O-3: ExtractionFailure Handling**
 
-The `browser.runtime.onMessage.addListener` callback correctly returns `true` to indicate asynchronous response handling, and uses `sendResponse` via `.then()` on the pipeline promise. This is the correct WebExtensions pattern for async message responses.
+The `onMessage` listener now handles both `archive-page` and `extraction-failed` message types. The `ExtractionFailure` handler uses the exact notification message from the spec (FR-009): "Could not extract content from this page."
 
 ---
 
 ## Prior Observations Carried Forward
 
+### TASK-018b
+
+- All seven pipeline steps from TASK-018b are implemented in the correct order.
+- The try/catch wraps the entire pipeline. Error message matches the spec string exactly.
+- The `browser.runtime.onMessage.addListener` callback correctly returns `true` for async response handling.
+
 ### TASK-015
 
-- Bundle packager correctly assembles TextBundle v2 archives per Section 4.4 with proper info.json, text.md, and assets/ structure.
-- Slug generator follows Section 4.7 algorithm exactly with comprehensive edge case handling.
+- Bundle packager correctly assembles TextBundle v2 archives per Section 4.4.
 
 ### TASK-012a
 
@@ -76,12 +81,13 @@ The `browser.runtime.onMessage.addListener` callback correctly returns `true` to
 ### TASK-004a / TASK-011
 
 - Readability demotes h1 to h2 in its output. Golden files reflect this behavior.
-- TurndownService instance created fresh per call for proper imageMap scoping.
 
 ### TASK-004
 
 - non-article.html uses redirect page pattern for Readability null extraction testing.
 
+---
+
 ## Verdict Rationale
 
-All acceptance criteria met. Full pipeline from ExtractionResult to download trigger is implemented. Failed images are patched correctly via the filter+patch pattern. Error handling catches all failure modes with the correct response shape. Per-stage and total timing logging present. No blocking or non-blocking findings.
+All acceptance criteria are met. Badge states, notification messages, colors, and timing all match the spec exactly. The concurrent-click guard is correctly implemented. No blocking or non-blocking findings.
