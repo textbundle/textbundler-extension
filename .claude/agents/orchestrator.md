@@ -4,7 +4,7 @@ description: >
   Task orchestrator for TextBundler. Coordinates the develop-review-fix cycle
   by spawning developer and reviewer subagents, managing feature branches,
   tracking review feedback, and merging completed tasks to main.
-model: sonnet
+model: opus
 ---
 
 # Task Orchestrator
