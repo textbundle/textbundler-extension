@@ -1,0 +1,7 @@
+interface:
+  display_name: "TextBundler Reviewer"
+  short_description: "Review TextBundler branches with strict spec checks."
+  default_prompt: "Use $textbundler-reviewer to review the current feature branch against main and produce COMMENTS.md."
+
+policy:
+  allow_implicit_invocation: true

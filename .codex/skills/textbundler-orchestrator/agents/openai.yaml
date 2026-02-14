@@ -1,0 +1,7 @@
+interface:
+  display_name: "TextBundler Orchestrator"
+  short_description: "Run full implement-review-fix-merge task cycles."
+  default_prompt: "Use $textbundler-orchestrator to run the full lifecycle for the next TextBundler TASK and merge when approved."
+
+policy:
+  allow_implicit_invocation: true

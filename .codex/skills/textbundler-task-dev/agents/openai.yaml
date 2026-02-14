@@ -1,0 +1,7 @@
+interface:
+  display_name: "TextBundler Task Dev"
+  short_description: "Implement TextBundler spec tasks using strict TDD."
+  default_prompt: "Use $textbundler-task-dev to implement the next TASK from docs/SPEC.md Section 7.2 with tests first."
+
+policy:
+  allow_implicit_invocation: true
