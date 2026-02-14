@@ -1,93 +1,24 @@
-# Code Review: feat/task-018c-ui-feedback
+# Review Notes: TASK-020
 
-**Task:** TASK-018c: Background Script — UI Feedback
-**Reviewer:** Code Reviewer Agent
-**Date:** 2026-02-14
-**Verdict:** APPROVE
+## Observations Carried Forward
 
----
+**O-1: Fetch mock design**
+The mock function correctly handles URL, URL object, and Request input types. The conditional branching properly extracts the URL string from each type, and the responses correctly simulate both successful PNG downloads (with Content-Type header) and 404 failures.
 
-## Summary
+**O-2: Manual imageMap modification pattern**
+The test manually adds a second image to the imageMap to simulate the failure scenario. This is an intentional and appropriate pattern for testing the failure path, since convertToMarkdown only discovers images actually present in the HTML fixture. The synthetic addition enables testing of the failed image patching workflow.
 
-This branch adds badge state management, browser notification display, and a concurrent-click guard to the background script. All five acceptance criteria from the spec are met: badge shows "..." during processing, "OK" on success (clears after 3s), "!" on failure (clears after 5s), notifications display on both success and failure, and concurrent clicks on the same tab are ignored via a `processingTabs` Set. The implementation is clean, well-documented, and correctly handles all three failure paths (script injection error, extraction failure, pipeline error).
+**O-3: Asset filename handling across the pipeline**
+The test correctly accounts for the design pattern where convertToMarkdown returns filenames with `assets/` prefix in the imageMap, downloadImages preserves these prefixes in returned assets, and then the test strips them before passing to packageBundle (which expects unprefixed filenames and adds the `assets/` prefix internally at line 44 of bundle-packager.ts). This design is consistent with existing tests in image-downloader.test.ts.
 
----
+**O-4: Comprehensive spec requirement coverage**
+All 12 requirements from the task description are directly addressed: HTML parsing, extraction, metadata, Markdown conversion, fetch mocking with success/404 paths, image downloading, failed asset patching, frontmatter generation, packaging, zip structure validation, failed image URL restoration, content leakage checks, and the null extraction failure case.
 
-## Validation Gates
+### Prior Tasks
 
-```
-npm test:          PASS (180 tests, 11 suites)
-npm run typecheck: PASS
-```
-
----
-
-## Checklist Results
-
-- Acceptance Criteria: PASS
-- Type Contracts: PASS
-- Module Conventions: PASS (default export allowed for WXT entrypoint)
-- Testing: N/A (entrypoint file — browser APIs not testable in Node.js)
-- Golden File Conventions: N/A
-- Data Conventions: N/A
-- Code Quality: PASS
-- Documentation: PASS
-- Git Hygiene: PASS
-
----
-
-## Findings
-
-### Blocking
-
-None.
-
-### Non-Blocking
-
-None.
-
-### Observations
-
-**O-1: Service Worker Lifecycle and processingTabs**
-
-The `processingTabs` Set is scoped to the `defineBackground()` closure, which means it resets if the service worker is terminated and restarted by the browser. This is acceptable behavior since a terminated service worker also means any in-flight pipeline was aborted.
-
-**O-2: Notification Icon Path**
-
-The `iconUrl` uses `browser.runtime.getURL('/icon/128.png')` which matches the icon paths in `public/icon/`. The TypeScript types require `iconUrl` for `type: "basic"` notifications, which is correctly provided.
-
-**O-3: ExtractionFailure Handling**
-
-The `onMessage` listener now handles both `archive-page` and `extraction-failed` message types. The `ExtractionFailure` handler uses the exact notification message from the spec (FR-009): "Could not extract content from this page."
-
----
-
-## Prior Observations Carried Forward
-
-### TASK-018b
-
-- All seven pipeline steps from TASK-018b are implemented in the correct order.
-- The try/catch wraps the entire pipeline. Error message matches the spec string exactly.
-- The `browser.runtime.onMessage.addListener` callback correctly returns `true` for async response handling.
-
-### TASK-015
-
-- Bundle packager correctly assembles TextBundle v2 archives per Section 4.4.
-
-### TASK-012a
-
-- VIDEO_HOSTS regex covers major platforms. tableChildren rule prevents GFM recursion.
-
-### TASK-004a / TASK-011
-
-- Readability demotes h1 to h2 in its output. Golden files reflect this behavior.
-
-### TASK-004
-
-- non-article.html uses redirect page pattern for Readability null extraction testing.
-
----
-
-## Verdict Rationale
-
-All acceptance criteria are met. Badge states, notification messages, colors, and timing all match the spec exactly. The concurrent-click guard is correctly implemented. No blocking or non-blocking findings.
+- TASK-018c: Badge state management, notification display, and concurrent-click guard implemented correctly per spec.
+- TASK-018b: All seven pipeline steps implemented in correct order. Error handling paths properly documented and tested.
+- TASK-015: Bundle packager correctly assembles TextBundle v2 archives per Section 4.4.
+- TASK-012a: VIDEO_HOSTS regex covers major platforms. tableChildren rule prevents GFM recursion.
+- TASK-004a / TASK-011: Readability demotes h1 to h2 in its output. Golden files reflect this behavior.
+- TASK-004: non-article.html uses redirect page pattern for Readability null extraction testing.
