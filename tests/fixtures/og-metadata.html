@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rich Metadata Article</title>
+  <meta name="author" content="Jane Doe">
+  <meta name="keywords" content="testing, metadata, open graph, json-ld">
+  <meta name="description" content="An article with comprehensive metadata for testing extraction.">
+  <meta property="og:title" content="Rich Metadata Article - OG Title">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://example.com/articles/rich-metadata">
+  <meta property="og:image" content="https://example.com/images/og-image.jpg">
+  <meta property="og:description" content="OG description for the rich metadata article.">
+  <meta property="og:site_name" content="Example Blog">
+  <meta property="article:published_time" content="2025-06-15T10:30:00Z">
+  <meta property="article:author" content="https://example.com/authors/jane-doe">
+  <link rel="canonical" href="https://example.com/articles/rich-metadata">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Rich Metadata Article",
+    "author": {
+      "@type": "Person",
+      "name": "Jane Doe"
+    },
+    "datePublished": "2025-06-15T10:30:00Z",
+    "dateModified": "2025-06-16T14:00:00Z",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Example Blog"
+    },
+    "description": "An article with comprehensive metadata for testing extraction."
+  }
+  </script>
+</head>
+<body>
+  <article>
+    <h1>Rich Metadata Article</h1>
+    <time datetime="2025-06-15T10:30:00Z">June 15, 2025</time>
+    <p>By <a href="https://example.com/authors/jane-doe">Jane Doe</a></p>
+    <p>This article has comprehensive metadata including Open Graph tags, JSON-LD structured data, standard meta tags, a canonical URL, and a time element. It serves as a test fixture for the metadata extractor.</p>
+    <p>The metadata extractor should find the title, author, publication date, description, keywords, canonical URL, OG image, OG type, and site name from the various sources in the head element.</p>
+    <p>Multiple metadata sources may provide conflicting values for the same field. The extractor should follow the priority order defined in the spec when resolving conflicts between OG tags, JSON-LD, and standard meta tags.</p>
+    <p>This final paragraph ensures enough content length for Readability to confidently identify the article region.</p>
+  </article>
+</body>
+</html>

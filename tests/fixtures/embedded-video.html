@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Embedded Video Test</title>
+</head>
+<body>
+  <article>
+    <h1>Video Embeds in Articles</h1>
+    <p>This article contains embedded video iframes from YouTube and Vimeo. These should be preserved as inline HTML in the Markdown output.</p>
+    <h2>YouTube Embed</h2>
+    <p>Here is an embedded YouTube video demonstrating the feature:</p>
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <p>The YouTube embed above uses the standard iframe embed code.</p>
+    <h2>Vimeo Embed</h2>
+    <p>And a Vimeo video for comparison:</p>
+    <iframe src="https://player.vimeo.com/video/148751763" width="640" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Vimeo video player"></iframe>
+    <p>Both video embeds should survive the Markdown conversion as inline HTML since there is no Markdown equivalent for embedded video players.</p>
+  </article>
+</body>
+</html>

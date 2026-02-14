@@ -1,8 +1,6 @@
-# Review Notes: TASK-003
+# Review Notes: TASK-004
 
 ## Observations Carried Forward
 
-- WXT builds to `.output/chrome-mv3/` by default, not `dist/`. The spec acceptance criteria mention `dist/` but this is the standard WXT behavior. CLAUDE.md also references `dist/` as the build output; a future task may want to align that documentation with the actual WXT output directory.
-- The content script template was removed since the spec architecture (Section 2.2, CLAUDE.md conventions) uses on-demand injection via `scripting.executeScript()` rather than manifest-declared content scripts. This is correct per the spec.
-- The popup entrypoint was removed as it is not part of the spec architecture. The extension uses toolbar button and context menu triggers, which will be wired in later tasks.
-- The spec describes the non-article test input as "a minimal non-article HTML (inline string with a `<form>` login page, no article structure)" but Readability under linkedom does not return null for form-based HTML -- it still extracts content. The test uses an empty body instead, which correctly validates the null return path. This is a known linkedom/Readability behavioral difference worth noting for future Readability-dependent tasks (DA-04, linkedom issue #43).
+- non-article.html uses a redirect page with empty body instead of a login form. The spec describes it as "a login form or search results page with no identifiable article content," but Readability with linkedom extracts content from any page with text nodes in the body, even form-only pages. The redirect page satisfies the acceptance criterion (Readability returns null). This is documented in an HTML comment referencing DA-04. If future Readability or linkedom updates change this behavior, the fixture may need revisiting.
+- mixed-content.html includes nav, sidebar aside, and footer elements outside the article tag, which will exercise Readability's content isolation in downstream tasks (TASK-009, TASK-021).

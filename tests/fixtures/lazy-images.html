@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Lazy Loading Images Test</title>
+</head>
+<body>
+  <article>
+    <h1>Lazy Loading Image Patterns</h1>
+    <p>This article demonstrates various lazy-loading image patterns found across the web. The lazy image resolver should handle all of these.</p>
+    <p>Image with data-src (common lazy loading pattern):</p>
+    <img data-src="https://example.com/images/lazy1.jpg" alt="Lazy loaded via data-src" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+    <p>Image with data-lazy-src (WordPress lazy loading):</p>
+    <img data-lazy-src="https://example.com/images/lazy2.png" alt="WordPress lazy loaded" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+    <p>Image with data-original (another common pattern):</p>
+    <img data-original="https://example.com/images/lazy3.webp" alt="Lazy loaded via data-original" src="placeholder.jpg">
+    <p>Image with srcset for responsive loading:</p>
+    <img src="https://example.com/images/responsive-small.jpg" srcset="https://example.com/images/responsive-medium.jpg 800w, https://example.com/images/responsive-large.jpg 1200w" alt="Responsive image with srcset">
+    <p>Picture element with source alternatives:</p>
+    <picture>
+      <source srcset="https://example.com/images/picture-avif.avif" type="image/avif">
+      <source srcset="https://example.com/images/picture-webp.webp" type="image/webp">
+      <img src="https://example.com/images/picture-fallback.jpg" alt="Picture element with multiple sources">
+    </picture>
+    <p>A regular image without lazy loading for comparison:</p>
+    <img src="https://example.com/images/regular.jpg" alt="Regular non-lazy image">
+    <p>These patterns cover the most common lazy-loading implementations found on modern websites.</p>
+  </article>
+</body>
+</html>
