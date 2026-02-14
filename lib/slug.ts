@@ -37,7 +37,7 @@ export function generateFilename(
   date: string | null,
   fallback?: string,
 ): string {
-  const datePrefix = date || new Date().toISOString().split('T')[0];
+  const datePrefix = (date || new Date().toISOString()).split('T')[0];
   const slug = slugify(title, fallback);
   return `${datePrefix}-${slug}.textpack`;
 }

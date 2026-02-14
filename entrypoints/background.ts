@@ -118,9 +118,9 @@ export default defineBackground(() => {
       return { success: true, filename };
     } catch (err) {
       const totalElapsed = Date.now() - pipelineStart;
-      const errorMsg = err instanceof Error ? err.message : String(err);
+      const errorMsg = err instanceof Error ? err.message || String(err) : String(err);
       logger.error('background', 'Pipeline failed', {
-        error: err instanceof Error ? err.stack ?? err.message : String(err),
+        error: err instanceof Error ? err.stack || err.message || String(err) : String(err),
         totalElapsed,
       });
 
