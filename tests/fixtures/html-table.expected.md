@@ -1,4 +1,4 @@
-# Complex Table Example
+## Complex Table Example
 
 This article contains a complex HTML table with various features that should be preserved as inline HTML in the Markdown output.
 

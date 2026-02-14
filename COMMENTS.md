@@ -1,6 +1,6 @@
-# Code Review: feat/task-004a-golden-file-generation
+# Code Review: feat/task-012a-html-preservation
 
-**Task:** TASK-004a: Golden File Generation
+**Task:** TASK-012a: Custom Turndown Rules — HTML Preservation
 **Reviewer:** Code Reviewer Agent
 **Date:** 2026-02-14
 **Verdict:** APPROVE
@@ -9,14 +9,14 @@
 
 ## Summary
 
-This branch generates all 9 golden files (`.expected.md`) for the HTML test fixtures per TASK-004a specifications. Base Markdown element golden files were verified to match `normalizeMarkdown(turndownOutput)` exactly. Custom-rule element golden files were manually authored to match TASK-012a/b/c specifications, with proper accounting for linkedom/Turndown HTML serialization behavior (single-line outerHTML, boolean attribute normalization). The implementation is correct and follows Section 10.7 conventions.
+This branch successfully implements custom Turndown rules to preserve HTML elements that cannot be adequately represented in Markdown: tables, details/summary, sup/sub, and video iframes. The implementation correctly overrides Turndown's default conversion for these elements and includes comprehensive tests with golden file comparisons. All validation gates pass, acceptance criteria are met, and the code follows project conventions.
 
 ---
 
 ## Validation Gates
 
 ```
-npm test:      PASS (54 tests, 3 suites)
+npm test:      PASS (70 tests, 3 suites)
 npm run typecheck: PASS
 ```
 
@@ -25,13 +25,13 @@ npm run typecheck: PASS
 ## Checklist Results
 
 - Acceptance Criteria: PASS
-- Type Contracts: N/A
-- Module Conventions: N/A
-- Testing: N/A
+- Type Contracts: PASS
+- Module Conventions: PASS
+- Testing: PASS
 - Golden File Conventions: PASS
 - Data Conventions: PASS
-- Code Quality: N/A
-- Documentation: N/A
+- Code Quality: PASS
+- Documentation: PASS
 - Git Hygiene: PASS
 
 ---
@@ -48,13 +48,29 @@ None.
 
 ### Observations
 
-- Readability strips `<aside>`, `<details>`, `<iframe>`, and `class="language-*"` attributes from `<code>` elements. Golden files for fixtures containing these elements are authored based on article.innerHTML (bypassing Readability) to test the custom Turndown rules in TASK-012a/b/c. The basic-article and code-blocks golden files use Readability output (matching the existing test pattern). This means mixed-content.expected.md includes `javascript` language annotations on code blocks while code-blocks.expected.md does not -- this is intentional and reflects the different input paths.
+**O-1: VIDEO_HOSTS regex is well-chosen**
 
-- linkedom serializes boolean HTML attributes with explicit empty string values (e.g., `allowfullscreen=""`, `open=""`). The golden files account for this serialization behavior. If the DOM library changes, these golden files may need updating.
+The regex at line 31 includes: youtube.com, youtu.be, vimeo.com, dailymotion.com, dai.ly. This covers the major video hosting services mentioned in the spec and is case-insensitive. Future iterations could consider other platforms (e.g., Twitch, etc.), but the current list is appropriate for mainstream content.
 
-- The aside-admonition fixture lacks a `role="note"` or `role="alert"` variant and a heading-based detection variant. The TASK-012c spec recommends "at least 4 variants: class-based detection, role-based, heading-based, and default fallback." The current fixture has 3 class-based, 1 no-class (default), and 1 `role="complementary"` (also falls to default). Consider adding `role="note"` and heading-based variants to the fixture when implementing TASK-012c.
+**O-2: Empty `imageMap` in TASK-012a is correct**
+
+The `imageMap` returned in line 91 is always empty at this stage. The spec (TASK-012b) states the image rewriting rule is a separate task. This separation of concerns is clean: TASK-012a focuses on HTML preservation rules, and TASK-012b will add the image rewriting logic. Tests correctly verify this (line 20 in the test file).
+
+**O-3: tableChildren rule effectively prevents GFM recursion**
+
+The tableChildren rule (lines 42-45) filters on thead, tbody, tfoot, tr, th, td, caption, colgroup, col and returns empty string. This prevents Turndown from recursively converting table internals. The approach is simple and effective — when the table rule returns `outerHTML`, the children are already included, so child rules must emit nothing.
+
+**O-4: Golden files follow whitespace conventions**
+
+All golden files end with exactly one newline. Heading levels are consistent (## for top-level due to Readability's h1→h2 demotion inside article elements). Content is properly formatted with blank lines between blocks. The latest fix commit (1249466) corrected heading levels to match actual Readability pipeline output, showing iterative quality improvement.
 
 ## Prior Observations Carried Forward
+
+### TASK-004a
+
+- Readability strips `<aside>`, `<details>`, `<iframe>`, and `class="language-*"` attributes from `<code>` elements. Golden files for fixtures containing these elements are authored based on article.innerHTML (bypassing Readability) to test the custom Turndown rules in TASK-012a/b/c. The basic-article and code-blocks golden files use Readability output (matching the existing test pattern). This means mixed-content.expected.md includes `javascript` language annotations on code blocks while code-blocks.expected.md does not -- this is intentional and reflects the different input paths.
+- linkedom serializes boolean HTML attributes with explicit empty string values (e.g., `allowfullscreen=""`, `open=""`). The golden files account for this serialization behavior. If the DOM library changes, these golden files may need updating.
+- The aside-admonition fixture lacks a `role="note"` or `role="alert"` variant and a heading-based detection variant. The TASK-012c spec recommends "at least 4 variants: class-based detection, role-based, heading-based, and default fallback." The current fixture has 3 class-based, 1 no-class (default), and 1 `role="complementary"` (also falls to default). Consider adding `role="note"` and heading-based variants to the fixture when implementing TASK-012c.
 
 ### TASK-011
 
@@ -71,4 +87,4 @@ None.
 
 ## Verdict Rationale
 
-All 9 golden files exist and follow Section 10.7 conventions. Base element golden files match normalizeMarkdown(turndownOutput). Custom-rule element golden files match TASK-012a/b/c specifications accounting for actual Turndown/linkedom serialization behavior. All acceptance criteria are met.
+All acceptance criteria from Section 7.2 TASK-012a are satisfied: each of the four rule types (tables, details/summary, sup/sub, video iframes) has dedicated tests using its corresponding fixture and golden file. All existing tests continue to pass. Validation gates pass with no errors. The implementation is complete, correct, and ready to merge.
