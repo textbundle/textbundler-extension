@@ -1,6 +1,6 @@
 # Solution Specification: TextBundler
 
-**Version:** 1.2
+**Version:** 1.3
 **Date:** 2026-02-14
 **Author:** Solution Architect (AI-Assisted)
 **Status:** Draft
@@ -837,7 +837,9 @@ Not applicable in the traditional sense (no server). Debugging strategy:
   - Deduplicate: same URL is fetched only once even if it appears multiple times in the map.
   - Timeout: 30 seconds per image (use `AbortController`).
 
-  **Cross-browser note (DA-02):** If `fetch()` from the service worker does not send cookies in Chrome MV3, the mitigation is to route image downloads through the content script via message passing: background sends image URLs to content script, content script fetches with cookies, sends ArrayBuffers back. This is a known risk; implement the service worker fetch first, add the content script fallback only if testing reveals cookie issues.
+  **Cross-browser note (DA-02):** If `fetch()` from the service worker does not send cookies in Chrome MV3, the mitigation is to route image downloads through the content script via message passing: background sends image URLs to content script, content script fetches with cookies, sends ArrayBuffers back. This is a known risk; implement the service worker fetch first.
+
+  **Fallback trigger:** If manual cross-browser verification shows auth-protected image requests missing session cookies in Chrome MV3, execute TASK-014c before TASK-018b.
 
   Tests must mock `fetch()` (Vitest's `vi.fn()` or `vi.stubGlobal()`). Test scenarios:
   - Successful download (verify ArrayBuffer and MIME type).
@@ -889,6 +891,24 @@ Not applicable in the traditional sense (no server). Debugging strategy:
 - Files: `lib/slug.ts`, `tests/slug.test.ts`
 - Acceptance: All test cases pass. Slug output matches Section 4.7 algorithm exactly.
 - Reqs: FR-005
+
+**TASK-014c: Content-Script Image Fetch Fallback (Contingency)**
+- Depends on: TASK-014, TASK-017
+- Size: M
+- Description: Implement a fallback path for authenticated image downloads when Chrome MV3 service worker `fetch()` does not include required cookies. Add a background→content message flow:
+  - Background identifies image URLs that failed due to auth/cookie issues.
+  - Background sends these URLs to the content script for in-page fetch.
+  - Content script fetches each URL with page-context cookies and returns `ArrayBuffer` + MIME metadata.
+  - Background maps fallback results back into `ImageAsset[]` with the same deduplication/filename semantics as TASK-014.
+
+  Tests:
+  - Background requests fallback for auth-failed URL and receives binary payload from content script.
+  - Returned payload is converted into non-failed `ImageAsset` with correct filename and MIME type.
+  - If fallback fetch also fails, asset remains `failed: true` and pipeline continues (NFR-005).
+  - Deduplication still holds when the same URL is requested multiple times.
+- Files: `lib/image-downloader.ts`, `entrypoints/content.ts`, `entrypoints/background.ts`, `tests/image-downloader.test.ts`, `tests/pipeline.test.ts`
+- Acceptance: Chrome MV3 fallback path successfully downloads an auth-protected fixture image in the contingency test scenario where service-worker fetch fails due to missing cookies.
+- Reqs: FR-004, NFR-005
 
 **TASK-015: Bundle Packager**
 - Depends on: TASK-012b, TASK-013, TASK-014b
@@ -962,7 +982,7 @@ Not applicable in the traditional sense (no server). Debugging strategy:
 - Reqs: FR-006, FR-007
 
 **TASK-018b: Background Script — Pipeline Orchestration**
-- Depends on: TASK-018a, TASK-014, TASK-014a, TASK-015, TASK-016
+- Depends on: TASK-018a, TASK-014, TASK-014a, TASK-015, TASK-016 (and TASK-014c if DA-02 fallback trigger is met)
 - Size: M
 - Description: Add the pipeline orchestration logic to `entrypoints/background.ts`. The background script listens for messages from the content script and runs the full conversion pipeline:
   1. Listen for `ExtractionResult` messages (type: `"archive-page"`).
@@ -1072,6 +1092,10 @@ TASK-001 ──► TASK-002 ─────────────────�
   │                                                                  │
   ├──► TASK-014 ──────────────────────────────────────────────────────────────► TASK-018b
   │                                                                  │             │
+  ├──► TASK-017 ─────────────────────────────────────────────────► TASK-014c ─────┤
+  │                                                                  │             │
+  ├──► TASK-014c (if triggered) ───────────────────────────────────────────────► TASK-018b
+  │                                                                  │             │
   ├──► TASK-014a ─────────────────────────────────────────────────────────────► TASK-018b
   │                                                                  │             │
   ├──► TASK-014b ─────────────────────────────────────────────────► TASK-015        │
@@ -1095,7 +1119,7 @@ Critical path: 001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 �
 | Test infrastructure works for agents | TASK-001, 002, 003, 004 | If the test setup is broken, all subsequent TDD tasks are blocked. Agents must be able to run `npm test` from TASK-004 onward. |
 | Readability extraction quality | TASK-008, 009 | If Readability doesn't work well enough on fixtures, the whole product fails. Validate early with Tier 1 fixtures. |
 | Turndown custom rules complexity | TASK-012a, 012b, 012c | Custom rules are the riskiest conversion logic. Golden file tests catch regressions. Split into 3 tasks to isolate failures. If a custom rule requires disproportionate complexity vs. accepting Turndown's default, revise the golden file and rule spec per DD-15. |
-| Image download with cookies | TASK-014 | `fetch()` from service worker with `credentials: "include"` — verify this works for auth'd images. DA-02 risk with concrete mitigation path. |
+| Image download with cookies | TASK-014, TASK-014c | `fetch()` from service worker with `credentials: "include"` — verify this works for auth'd images. If Chrome MV3 cookie behavior fails, execute TASK-014c contingency before pipeline wiring. |
 | Failed image URL patching | TASK-014a | The `patchFailedImageUrls()` function is critical for NFR-005 (graceful degradation). Must work for both Markdown and inline HTML image references. |
 | JSZip in service worker | TASK-015 | Confirm JSZip works in service worker context (no DOM dependency). |
 
@@ -1108,11 +1132,10 @@ Critical path: 001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 �
 | DA-01 | `browser.scripting.executeScript()` can inject bundled content script from service worker in both Firefox and Chrome. WXT handles the MV2/MV3 abstraction for this. | WXT docs, MV3 spec | Would need to declare content script in manifest with `<all_urls>`, increasing permission scope. | Fall back to manifest-declared content scripts with `<all_urls>` permission. |
 | DA-02 | `fetch()` from service worker sends cookies for the target domain (for auth'd image downloads) when using `credentials: "include"`. | Browser fetch spec | Chrome MV3 service workers may not forward cookies consistently for cross-origin requests. | Route image downloads through the content script via message passing: background sends URLs to content script, content script fetches (has page cookies), sends ArrayBuffers back. Implement service worker fetch first; add content script fallback if testing reveals issues. |
 | DA-03 | JSZip works in service worker context (no DOM APIs required). | JSZip docs claim no DOM dependency | Would need to run packaging in content script or offscreen document. | Use Chrome's offscreen document API as fallback for JSZip operations. |
-| DA-04 | Readability can run on a cloned document or a linkedom-parsed document without degraded extraction quality. | Readability operates primarily on body content and text heuristics. | linkedom lacks layout properties (`offsetHeight`, `offsetWidth`, computed styles) that Readability may use in scoring. linkedom issue #43 documents a potential infinite loop when combined with Readability. Extraction results in tests may differ from production. | TASK-003 includes a Readability canary test with a 5s timeout to catch infinite loops. TASK-009 Readability tests have 10s timeouts. If linkedom fails, switch to JSDOM. Accept that test results are an approximation — real browser testing validates production behavior. The Tier 1 fixtures are designed to have strong article signals that don't depend on layout scoring. |
+| DA-04 | linkedom + Readability are sufficiently compatible for Node-based testing, without blocking implementation decisions. | Readability heuristics are mostly content-based; linkedom is already used in the ecosystem. | linkedom lacks layout properties (`offsetHeight`, `offsetWidth`, computed styles); Readability may behave differently from browser DOM and can hit infinite loops (linkedom issue #43). | Validation A (TASK-003): 5s canary test catches fundamental compatibility/hang failures early. Validation B (TASK-009 + TASK-021): fixture-based extraction quality checks and Tier 2 smoke tests validate practical behavior. If compatibility fails, switch tests to JSDOM before continuing Readability-dependent tasks. |
 | DA-05 | Single content script injection captures fully-rendered DOM including SPA content. Content scripts see the rendered DOM. | WebExtensions spec | Some SPAs may need delayed injection or mutation observers (A-007). Addressed by Phase 2 manual selection (FR-010). | Phase 2 FR-010 provides manual content selection as fallback. |
 | DA-06 | WXT's `@wxt-dev/browser` provides full API coverage for `scripting`, `action`, `contextMenus`, `downloads`, and `notifications` across Firefox and Chrome. | WXT documentation | May need to use raw `chrome.*` APIs for specific calls. | WXT has an active community and frequent releases; file issues for missing APIs. |
-| DA-07 | linkedom parses real-world HTML accurately enough for Readability to produce results comparable to browser DOM parsing. | linkedom documentation, usage in WXT itself | Readability may rely on DOM properties not implemented by linkedom (offsetHeight, offsetWidth, getComputedStyle). linkedom issue #43 documents potential infinite loops. Test results may give false confidence. | Tier 1 fixtures are curated with strong article signals. Tier 2 smoke tests accept minor deviations. Real browser manual testing validates production. TASK-003 canary test with 5s timeout catches fundamental incompatibility and infinite loops early. All Readability tests have 10s timeouts (TASK-009). |
-| DA-08 | `wget` captures server-rendered HTML accurately for article-style sites (news, blogs, Wikipedia, MDN). | Article sites are primarily server-rendered | JS-rendered SPAs will have incomplete HTML. This is acceptable — SPAs are explicitly edge cases (OQ-007, R-001). | Tier 2 corpus focuses on server-rendered sites. SPA handling deferred to Phase 2 (FR-010). |
+| DA-07 | `wget` captures server-rendered HTML accurately for article-style sites (news, blogs, Wikipedia, MDN). | Article sites are primarily server-rendered | JS-rendered SPAs will have incomplete HTML. This is acceptable — SPAs are explicitly edge cases (OQ-007, R-001). | Tier 2 corpus focuses on server-rendered sites. SPA handling deferred to Phase 2 (FR-010). |
 
 ---
 
@@ -1134,7 +1157,7 @@ Critical path: 001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 �
 | DD-12 | Optimistic image URL rewriting with post-hoc patching over download-first approach | Download images before Markdown conversion; pass download results to converter | Optimistic rewriting keeps the converter stateless (it doesn't need to know about download results). Patching is a simple `replaceAll()` on unique, deterministic filenames. The alternative would couple the converter to the downloader, complicating both modules. | FR-004, NFR-005 |
 | DD-13 | Split TASK-012 (7 rules) into 3 subtasks | Single large task | Each subtask is independently testable and reviewable. Isolates failures: a bug in aside detection doesn't block table preservation. Reduces cognitive load per task for agents. | FR-002 |
 | DD-14 | Golden files generated from Turndown output + agent fix-ups, not hand-authored | Hand-authored golden files; or purely auto-generated without review | Turndown-generated output avoids transcription errors in hand-authoring. Agent review catches Turndown quirks and applies Section 10.7 conventions. Golden files for custom-rule elements are manually authored to match rule specs since the rules don't exist yet at generation time. | FR-002 |
-| DD-15 | Pragmatism over perfection for custom Turndown rules | Always implement custom rules as specified | If a custom Turndown rule requires disproportionate code complexity (10x the code of accepting Turndown's default), the golden file and rule spec should be revised to accept the default. The goal is useful Markdown archives, not pixel-perfect conversion. Flag for review rather than silently accepting subpar output. | FR-002, NFR-009 |
+| DD-15 | Pragmatism over perfection for custom Turndown rules | Always implement custom rules as specified | A custom rule may be downgraded to default Turndown output only if all are true: (1) implementation exceeds ~80 LOC or introduces parser-like complexity; (2) the output delta is cosmetic (no data loss, no broken links/media references); (3) golden-file diff is reviewed and accepted; (4) rationale is recorded in design/tasks notes. Goal: useful Markdown archives, not pixel-perfect conversion. | FR-002, NFR-009 |
 
 ---
 
@@ -1142,11 +1165,11 @@ Critical path: 001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 �
 
 ### 10.1 Execution Order
 
-Tasks MUST be executed in the order listed in Section 7.2. Each task's `Depends on` field defines hard prerequisites. Do not parallelize tasks that share dependencies. The critical path is: TASK-001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 → 018b → 018c → 020.
+Tasks must respect `Depends on` prerequisites. When multiple tasks are unblocked, execute in the order listed in Section 7.2 unless a risk-priority note explicitly says otherwise. Do not parallelize tasks that share dependencies. Recommended risk-first critical path: TASK-001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 → 018b → 018c → 020.
 
 ### 10.2 Validation Gates
 
-After each task, run `npm test` and `npm run typecheck`. Both must pass before proceeding to the next task. For tasks that add new test files, the new tests must pass. For tasks that modify existing code, all existing tests must continue to pass (no regressions).
+After each task, run `npm run typecheck`. Run `npm test` after each task once Vitest is configured (TASK-003 onward). For TASK-001 and TASK-002, validation gate is `npm run build`, `npm run lint`, and `npm run typecheck`. For TASK-003 onward, both `npm test` and `npm run typecheck` must pass before proceeding. For tasks that add new test files, the new tests must pass. For tasks that modify existing code, all existing tests must continue to pass (no regressions).
 
 ### 10.3 Testing Strategy
 
@@ -1283,3 +1306,4 @@ Inline `code` in a paragraph.
 | 1.0 | 2026-02-14 | Solution Architect | Initial spec |
 | 1.1 | 2026-02-14 | Solution Architect | Address review feedback: add ArticleResult type (Section 4.2); restructure pipeline with optimistic image rewriting + post-hoc patching for failed images (Section 4.3, DD-12); add service worker lifetime analysis (Section 2.4); split TASK-012 into 012a/012b/012c (DD-13); split TASK-018 into 018a/018b/018c; add TASK-014a (image patcher) and TASK-014b (slug generator); add Readability canary test to TASK-003 (DA-04, DA-07); add non-article fixture to TASK-004; expand Tier 2 corpus to 20 specific URLs (TASK-005); add `credentials: "include"` to image fetch with content-script fallback path (DA-02); add cross-browser blob URL handling to TASK-016; specify slug generation algorithm (Section 4.7); specify image filename padding (3-digit); add golden file conventions (Section 10.7); add concrete mitigations to all design assumptions (Section 8); fix TASK-015 dependencies (remove TASK-014, add TASK-014b); clarify aside/admonition detection rules with precedence (TASK-012c); add error handling categories to TASK-018b. |
 | 1.2 | 2026-02-14 | Solution Architect | Address setup and testing review: add TASK-004a (golden file generation from Turndown output, depends on TASK-004 + TASK-011) — golden files are now generated, not hand-authored (DD-14); add pragmatism principle for custom rules (DD-15); strengthen TASK-003 Readability canary test with 5s timeout and multi-paragraph HTML to catch linkedom issue #43; add non-article canary test; add `normalizeMarkdown()` helper to TASK-003 and Section 6.2; add `__DEV__` define to vitest.config.ts; add 10s Readability timeout to TASK-009 tests; add heading level preservation rule to Section 10.7 and TASK-011; update Section 10.3 with browser API mock strategy (per-task in Phase 5) and Readability timeout guidance; update DA-04 and DA-07 with linkedom issue #43 reference and timeout mitigations; update critical path to include TASK-004a; update dependency graph. |
+| 1.3 | 2026-02-14 | Solution Architect | Clarify execution semantics to dependency-first ordering with risk-priority tie-breaks (Section 10.1); make validation gates bootstrap-safe for pre-Vitest tasks (Section 10.2); add DA-02 fallback trigger and TASK-014c contingency for Chrome MV3 cookie issues (TASK-014, TASK-014c, TASK-018b, Section 7.3, Section 7.4); consolidate duplicate linkedom/Readability assumptions into a single measurable DA-04 and renumber server-rendered fixture assumption to DA-07 (Section 8); tighten DD-15 with explicit downgrade checklist and review requirements. |
