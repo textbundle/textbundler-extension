@@ -1,6 +1,6 @@
-# Code Review: feat/task-012b-figures-image-rewriting
+# Code Review: feat/task-015-bundle-packager
 
-**Task:** TASK-012b: Custom Turndown Rules — Figures & Image Rewriting
+**Task:** TASK-014b: Slug Generator & TASK-015: Bundle Packager
 **Reviewer:** Code Reviewer Agent
 **Date:** 2026-02-14
 **Verdict:** APPROVE
@@ -9,15 +9,15 @@
 
 ## Summary
 
-TASK-012b successfully adds two critical Turndown rules: (1) figure handling preserves `<figure>` elements as inline HTML with `<img>` src attributes rewritten to `assets/` paths, and (2) standalone image rewriting converts `<img>` to Markdown syntax with src rewritten to asset paths. A shared image counter increments across both rule types, with deduplication ensuring duplicate URLs map to the same filename. All acceptance criteria are met, tests pass (87/87 including 58 markdown-converter tests), types are correct, and the golden file matches expected output format.
+This branch implements two critical modules for the TextBundle packaging pipeline: the slug generator (TASK-014b) for creating safe filenames, and the bundle packager (TASK-015) for assembling the final zip archive. Both modules are well-tested with comprehensive test coverage, correctly implement the spec algorithms, and pass all validation gates. The code is production-ready.
 
 ---
 
 ## Validation Gates
 
 ```
-npm test:      PASS (87 tests, 3 suites, 446ms)
-npm run typecheck: PASS (no type errors)
+npm test:      PASS (113 tests across 5 files)
+npm run typecheck: PASS
 ```
 
 ---
@@ -28,7 +28,7 @@ npm run typecheck: PASS (no type errors)
 - Type Contracts: PASS
 - Module Conventions: PASS
 - Testing: PASS
-- Golden File Conventions: PASS
+- Golden File Conventions: N/A
 - Data Conventions: PASS
 - Code Quality: PASS
 - Documentation: PASS
@@ -48,25 +48,31 @@ None.
 
 ### Observations
 
-**O-1: Extension extraction logic handles malformed URLs gracefully**
+**O-1: TASK-014b (Slug Generator) — Algorithm Correctness**
 
-The `extractExtension()` helper (lines 6–18) uses try-catch around URL parsing and falls back to `.jpg` for any parsing failure or invalid extension. This is robust and prevents crashes on malformed image URLs (data: URIs, relative paths, etc.). The DD-12 reference in the catch block correctly documents this fallback design decision.
+The slug implementation correctly follows Section 4.7's algorithm: NFD unicode normalization → diacritic removal → lowercase → character class replacement → leading/trailing hyphen removal → truncation to 80 chars with trailing hyphen cleanup. The implementation properly handles edge cases (unicode stripping, empty results with fallback, truncation without trailing hyphens). The test suite covers all required scenarios from the task description, including apostrophes, very long titles, and unicode normalization. 16 slug tests validate the algorithm comprehensively.
 
-**O-2: Figure rule uses in-place DOM mutation on shallow clone**
+**O-2: TASK-015 (Bundle Packager) — Zip Structure & Metadata**
 
-The figure rule (lines 113–126) mutates `<img>` src attributes directly on the cloned DOM node before serializing outerHTML. This is efficient and correct because Turndown operates on shallow clones, so mutations are isolated and don't affect the original DOM passed to the function.
+The packager correctly assembles TextBundle v2 archives per Section 4.4. The `info.json` matches the spec exactly (version 2, creatorIdentifier `org.textbundle.textbundler`, sourceURL field populated). The `text.md` is correctly formed by concatenating frontmatter + newline + markdown body. The JSZip usage is idiomatic and the async/await pattern is clean. All 10 bundle-packager tests validate distinct aspects of the zip structure and metadata.
 
-**O-3: Image counter and imageMap reset per convertToMarkdown() call**
+**O-3: Test Coverage — Comprehensive and Well-Structured**
 
-The imageCounter and imageMap are declared inside convertToMarkdown() (lines 33–34), ensuring they reset on each invocation. This matches the spec requirement (Section 7.2, TASK-012b: "imageMap is a closure-scoped variable...reset on each call"). Test `resets counter between calls to convertToMarkdown` (lines 562–575) validates this behavior.
+Slug tests verify: basic punctuation removal, apostrophes, truncation without trailing hyphens, unicode normalization, and fallback behavior. Bundle packager tests verify: zip validity, file presence, metadata correctness, lowercase filenames, failed image exclusion, and blob/filename return type. The tests use JSZip to read back the archive in tests, validating the actual zip structure rather than just mocking. Test isolation via `beforeEach()` is clean (mockAssets reset per test).
 
-**O-4: Deduplication via imageMap lookup before counter increment**
+**O-4: Filename Generation Integration**
 
-The getAssetPath() function (lines 36–43) checks imageMap for existing entries before incrementing the counter. This ensures the same URL always maps to the same filename and prevents counter increment on duplicates. Test `does not increment counter for duplicate URLs` (lines 537–545) validates this critical behavior.
+TASK-015 correctly delegates to `generateFilename()` from TASK-014b, ensuring consistent filename patterns. The integration is clean and the signature matches the task spec. The bundle packager passes title, date, and implicitly uses fallback=undefined (which is fine since the packager has a valid title from the extraction pipeline).
 
-**O-5: Golden file figure-caption.expected.md is correctly formatted**
+**O-5: Lowercase Filename Convention Enforced**
 
-The golden file shows proper inline HTML preservation (figures on single lines), correct image path rewriting (image-001.jpg, image-002.png, image-003.webp with 3-digit zero-padding), and correct spacing (blank lines between blocks). Matches Section 10.7 conventions exactly.
+Both modules respect the "all filenames inside bundles must be lowercase" requirement (CLAUDE.md, Section 4.7). Bundle packager test `all filenames inside zip are lowercase` (lines 108–125) explicitly verifies this constraint across all generated filenames (info.json, text.md, assets/*). No uppercase characters appear in generated paths.
+
+## Verdict Rationale
+
+All acceptance criteria from both task descriptions are met. Tests pass (113/113 across 5 files), types are correct, JSDoc comments are present and informative, and the code follows all module and data conventions. The implementation correctly interprets and executes the spec algorithms. Dependencies (TASK-012b, TASK-013, TASK-014b) are complete and the branch is ready to merge.
+
+---
 
 ## Prior Observations Carried Forward
 
@@ -93,8 +99,3 @@ The golden file shows proper inline HTML preservation (figures on single lines),
 - non-article.html uses a redirect page with empty body instead of a login form. The spec describes it as "a login form or search results page with no identifiable article content," but Readability with linkedom extracts content from any page with text nodes in the body, even form-only pages. The redirect page satisfies the acceptance criterion (Readability returns null). This is documented in an HTML comment referencing DA-04. If future Readability or linkedom updates change this behavior, the fixture may need revisiting.
 - mixed-content.html includes nav, sidebar aside, and footer elements outside the article tag, which will exercise Readability's content isolation in downstream tasks (TASK-009, TASK-021).
 
----
-
-## Verdict Rationale
-
-All acceptance criteria from Section 7.2 TASK-012b are satisfied: figures are preserved as inline HTML with img src rewritten to assets/ paths, standalone images are converted to Markdown syntax with src rewriting, the imageMap correctly tracks URL→filename mappings, deduplication works (same URL maps to same filename), and the shared counter between figures and standalone images is validated. Tests pass (87/87, including 58 markdown-converter tests), typecheck passes with no errors, golden file format is correct, and code follows all module and documentation conventions. The implementation is ready to merge.
