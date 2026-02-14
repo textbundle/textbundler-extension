@@ -1,6 +1,6 @@
-# Code Review: feat/task-012a-html-preservation
+# Code Review: feat/task-012b-figures-image-rewriting
 
-**Task:** TASK-012a: Custom Turndown Rules — HTML Preservation
+**Task:** TASK-012b: Custom Turndown Rules — Figures & Image Rewriting
 **Reviewer:** Code Reviewer Agent
 **Date:** 2026-02-14
 **Verdict:** APPROVE
@@ -9,15 +9,15 @@
 
 ## Summary
 
-This branch successfully implements custom Turndown rules to preserve HTML elements that cannot be adequately represented in Markdown: tables, details/summary, sup/sub, and video iframes. The implementation correctly overrides Turndown's default conversion for these elements and includes comprehensive tests with golden file comparisons. All validation gates pass, acceptance criteria are met, and the code follows project conventions.
+TASK-012b successfully adds two critical Turndown rules: (1) figure handling preserves `<figure>` elements as inline HTML with `<img>` src attributes rewritten to `assets/` paths, and (2) standalone image rewriting converts `<img>` to Markdown syntax with src rewritten to asset paths. A shared image counter increments across both rule types, with deduplication ensuring duplicate URLs map to the same filename. All acceptance criteria are met, tests pass (87/87 including 58 markdown-converter tests), types are correct, and the golden file matches expected output format.
 
 ---
 
 ## Validation Gates
 
 ```
-npm test:      PASS (70 tests, 3 suites)
-npm run typecheck: PASS
+npm test:      PASS (87 tests, 3 suites, 446ms)
+npm run typecheck: PASS (no type errors)
 ```
 
 ---
@@ -48,23 +48,33 @@ None.
 
 ### Observations
 
-**O-1: VIDEO_HOSTS regex is well-chosen**
+**O-1: Extension extraction logic handles malformed URLs gracefully**
 
-The regex at line 31 includes: youtube.com, youtu.be, vimeo.com, dailymotion.com, dai.ly. This covers the major video hosting services mentioned in the spec and is case-insensitive. Future iterations could consider other platforms (e.g., Twitch, etc.), but the current list is appropriate for mainstream content.
+The `extractExtension()` helper (lines 6–18) uses try-catch around URL parsing and falls back to `.jpg` for any parsing failure or invalid extension. This is robust and prevents crashes on malformed image URLs (data: URIs, relative paths, etc.). The DD-12 reference in the catch block correctly documents this fallback design decision.
 
-**O-2: Empty `imageMap` in TASK-012a is correct**
+**O-2: Figure rule uses in-place DOM mutation on shallow clone**
 
-The `imageMap` returned in line 91 is always empty at this stage. The spec (TASK-012b) states the image rewriting rule is a separate task. This separation of concerns is clean: TASK-012a focuses on HTML preservation rules, and TASK-012b will add the image rewriting logic. Tests correctly verify this (line 20 in the test file).
+The figure rule (lines 113–126) mutates `<img>` src attributes directly on the cloned DOM node before serializing outerHTML. This is efficient and correct because Turndown operates on shallow clones, so mutations are isolated and don't affect the original DOM passed to the function.
 
-**O-3: tableChildren rule effectively prevents GFM recursion**
+**O-3: Image counter and imageMap reset per convertToMarkdown() call**
 
-The tableChildren rule (lines 42-45) filters on thead, tbody, tfoot, tr, th, td, caption, colgroup, col and returns empty string. This prevents Turndown from recursively converting table internals. The approach is simple and effective — when the table rule returns `outerHTML`, the children are already included, so child rules must emit nothing.
+The imageCounter and imageMap are declared inside convertToMarkdown() (lines 33–34), ensuring they reset on each invocation. This matches the spec requirement (Section 7.2, TASK-012b: "imageMap is a closure-scoped variable...reset on each call"). Test `resets counter between calls to convertToMarkdown` (lines 562–575) validates this behavior.
 
-**O-4: Golden files follow whitespace conventions**
+**O-4: Deduplication via imageMap lookup before counter increment**
 
-All golden files end with exactly one newline. Heading levels are consistent (## for top-level due to Readability's h1→h2 demotion inside article elements). Content is properly formatted with blank lines between blocks. The latest fix commit (1249466) corrected heading levels to match actual Readability pipeline output, showing iterative quality improvement.
+The getAssetPath() function (lines 36–43) checks imageMap for existing entries before incrementing the counter. This ensures the same URL always maps to the same filename and prevents counter increment on duplicates. Test `does not increment counter for duplicate URLs` (lines 537–545) validates this critical behavior.
+
+**O-5: Golden file figure-caption.expected.md is correctly formatted**
+
+The golden file shows proper inline HTML preservation (figures on single lines), correct image path rewriting (image-001.jpg, image-002.png, image-003.webp with 3-digit zero-padding), and correct spacing (blank lines between blocks). Matches Section 10.7 conventions exactly.
 
 ## Prior Observations Carried Forward
+
+### TASK-012a
+
+- VIDEO_HOSTS regex is well-chosen: youtube.com, youtu.be, vimeo.com, dailymotion.com, dai.ly. Case-insensitive and covers major platforms.
+- tableChildren rule effectively prevents GFM recursion by returning empty string for all table children (thead, tbody, tfoot, tr, th, td, caption, colgroup, col).
+- Golden files follow whitespace conventions (single trailing newline, blank lines between blocks, correct heading levels due to Readability h1→h2 demotion).
 
 ### TASK-004a
 
@@ -87,4 +97,4 @@ All golden files end with exactly one newline. Heading levels are consistent (##
 
 ## Verdict Rationale
 
-All acceptance criteria from Section 7.2 TASK-012a are satisfied: each of the four rule types (tables, details/summary, sup/sub, video iframes) has dedicated tests using its corresponding fixture and golden file. All existing tests continue to pass. Validation gates pass with no errors. The implementation is complete, correct, and ready to merge.
+All acceptance criteria from Section 7.2 TASK-012b are satisfied: figures are preserved as inline HTML with img src rewritten to assets/ paths, standalone images are converted to Markdown syntax with src rewriting, the imageMap correctly tracks URL→filename mappings, deduplication works (same URL maps to same filename), and the shared counter between figures and standalone images is validated. Tests pass (87/87, including 58 markdown-converter tests), typecheck passes with no errors, golden file format is correct, and code follows all module and documentation conventions. The implementation is ready to merge.
