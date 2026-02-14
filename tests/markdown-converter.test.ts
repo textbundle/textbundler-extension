@@ -3,6 +3,7 @@ import { Readability } from '@mozilla/readability';
 import { convertToMarkdown } from '../lib/markdown-converter';
 import { parseHTML } from './helpers/parse-html';
 import { readFixture } from './helpers/read-fixture';
+import { normalizeMarkdown } from './helpers/normalize-markdown';
 
 describe('convertToMarkdown', () => {
   describe('return type', () => {
@@ -203,6 +204,181 @@ describe('convertToMarkdown', () => {
         expect(markdown).toContain('---');
         expect(markdown).toContain('**_bold italic_**');
         expect(Object.keys(imageMap)).toHaveLength(0);
+      },
+      10_000,
+    );
+  });
+
+  describe('tables (HTML preservation)', () => {
+    it('preserves simple table as inline HTML', () => {
+      const html =
+        '<table><tr><td>Cell</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+      expect(markdown).toContain('</table>');
+    });
+
+    it('preserves table with thead/tbody as inline HTML', () => {
+      const html =
+        '<table><thead><tr><th>Header</th></tr></thead><tbody><tr><td>Data</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<thead>');
+      expect(markdown).toContain('<tbody>');
+      expect(markdown).toContain('<th>');
+      expect(markdown).toContain('<td>');
+    });
+
+    it('preserves colspan and rowspan attributes', () => {
+      const html =
+        '<table><tr><td colspan="2">Wide</td></tr><tr><td rowspan="2">Tall</td><td>Cell</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('colspan="2"');
+      expect(markdown).toContain('rowspan="2"');
+    });
+
+    it('does not convert tables to GFM markdown table syntax', () => {
+      const html =
+        '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).not.toMatch(/\|.*\|/);
+    });
+
+    it(
+      'matches html-table.expected.md golden file',
+      () => {
+        const html = readFixture('html-table.html');
+        const doc = parseHTML(html);
+        const article = new Readability(doc).parse();
+        expect(article).not.toBeNull();
+
+        const { markdown } = convertToMarkdown(article!.content);
+        const expected = readFixture('html-table.expected.md');
+
+        expect(normalizeMarkdown(markdown)).toBe(
+          normalizeMarkdown(expected),
+        );
+      },
+      10_000,
+    );
+  });
+
+  describe('details/summary (HTML preservation)', () => {
+    it('preserves details element as inline HTML', () => {
+      const html =
+        '<details><summary>Title</summary><p>Content</p></details>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<details>');
+      expect(markdown).toContain('<summary>');
+      expect(markdown).toContain('</details>');
+    });
+
+    it('preserves open attribute on details', () => {
+      const html =
+        '<details open><summary>Open section</summary><p>Visible</p></details>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<details');
+      expect(markdown).toContain('open');
+    });
+
+    it(
+      'matches details-summary.expected.md golden file',
+      () => {
+        const html = readFixture('details-summary.html');
+        const doc = parseHTML(html);
+        const article = new Readability(doc).parse();
+        expect(article).not.toBeNull();
+
+        const { markdown } = convertToMarkdown(article!.content);
+        const expected = readFixture('details-summary.expected.md');
+
+        expect(normalizeMarkdown(markdown)).toBe(
+          normalizeMarkdown(expected),
+        );
+      },
+      10_000,
+    );
+  });
+
+  describe('sup/sub (HTML preservation)', () => {
+    it('preserves superscript as inline HTML', () => {
+      const { markdown } = convertToMarkdown(
+        '<p>E = mc<sup>2</sup></p>',
+      );
+      expect(markdown).toContain('<sup>2</sup>');
+    });
+
+    it('preserves subscript as inline HTML', () => {
+      const { markdown } = convertToMarkdown(
+        '<p>H<sub>2</sub>O</p>',
+      );
+      expect(markdown).toContain('<sub>2</sub>');
+    });
+
+    it('preserves links inside sup as HTML', () => {
+      const { markdown } = convertToMarkdown(
+        '<p>Text<sup><a href="#ref1">[1]</a></sup></p>',
+      );
+      expect(markdown).toContain('<sup><a href="#ref1">[1]</a></sup>');
+    });
+
+    it(
+      'matches sup-sub.expected.md golden file',
+      () => {
+        const html = readFixture('sup-sub.html');
+        const doc = parseHTML(html);
+        const article = new Readability(doc).parse();
+        expect(article).not.toBeNull();
+
+        const { markdown } = convertToMarkdown(article!.content);
+        const expected = readFixture('sup-sub.expected.md');
+
+        expect(normalizeMarkdown(markdown)).toBe(
+          normalizeMarkdown(expected),
+        );
+      },
+      10_000,
+    );
+  });
+
+  describe('embedded video iframes (HTML preservation)', () => {
+    it('preserves YouTube iframe as inline HTML', () => {
+      const html =
+        '<iframe src="https://www.youtube.com/embed/abc123" width="560" height="315"></iframe>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<iframe');
+      expect(markdown).toContain('youtube.com');
+      expect(markdown).toContain('</iframe>');
+    });
+
+    it('preserves Vimeo iframe as inline HTML', () => {
+      const html =
+        '<iframe src="https://player.vimeo.com/video/12345" width="640" height="360"></iframe>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<iframe');
+      expect(markdown).toContain('vimeo.com');
+    });
+
+    it('does not preserve non-video iframes', () => {
+      const html =
+        '<iframe src="https://example.com/widget"></iframe>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).not.toContain('<iframe');
+    });
+
+    it(
+      'matches embedded-video.expected.md golden file',
+      () => {
+        const html = readFixture('embedded-video.html');
+        const doc = parseHTML(html);
+        const article = new Readability(doc).parse();
+        expect(article).not.toBeNull();
+
+        const { markdown } = convertToMarkdown(article!.content);
+        const expected = readFixture('embedded-video.expected.md');
+
+        expect(normalizeMarkdown(markdown)).toBe(
+          normalizeMarkdown(expected),
+        );
       },
       10_000,
     );
