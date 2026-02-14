@@ -1,6 +1,6 @@
-# Code Review: feat/task-018c-ui-feedback
+# Code Review: feat/task-020-pipeline-integration-tests
 
-**Task:** TASK-018c: Background Script — UI Feedback
+**Task:** TASK-020: Full Pipeline Integration Tests
 **Reviewer:** Code Reviewer Agent
 **Date:** 2026-02-14
 **Verdict:** APPROVE
@@ -9,14 +9,14 @@
 
 ## Summary
 
-This branch adds badge state management, browser notification display, and a concurrent-click guard to the background script. All five acceptance criteria from the spec are met: badge shows "..." during processing, "OK" on success (clears after 3s), "!" on failure (clears after 5s), notifications display on both success and failure, and concurrent clicks on the same tab are ignored via a `processingTabs` Set. The implementation is clean, well-documented, and correctly handles all three failure paths (script injection error, extraction failure, pipeline error).
+This branch implements TASK-020 end-to-end pipeline integration tests using the `mixed-content.html` and `non-article.html` fixtures. The test file comprehensively validates the full archival pipeline (extraction → Markdown conversion → image patching → frontmatter → packaging) and correctly verifies zip structure, failed image patching, and content filtering. All acceptance criteria are met, both validation gates pass, and the code follows established patterns.
 
 ---
 
 ## Validation Gates
 
 ```
-npm test:          PASS (180 tests, 11 suites)
+npm test:          PASS (182 passed, 12 suites)
 npm run typecheck: PASS
 ```
 
@@ -26,10 +26,10 @@ npm run typecheck: PASS
 
 - Acceptance Criteria: PASS
 - Type Contracts: PASS
-- Module Conventions: PASS (default export allowed for WXT entrypoint)
-- Testing: N/A (entrypoint file — browser APIs not testable in Node.js)
+- Module Conventions: PASS
+- Testing: PASS
 - Golden File Conventions: N/A
-- Data Conventions: N/A
+- Data Conventions: PASS
 - Code Quality: PASS
 - Documentation: PASS
 - Git Hygiene: PASS
@@ -44,31 +44,42 @@ None.
 
 ### Non-Blocking
 
-None.
+**NB-1: Unused `originalFetch` variable**
+- **File:** `tests/pipeline.test.ts:15-18`
+- **Issue:** The `originalFetch` variable is saved in `beforeEach()` but never used. The test correctly relies on `vi.unstubAllGlobals()` in `afterEach()`, making this assignment unnecessary.
+- **Suggestion:** Remove lines 15 and 18 (the `let originalFetch` declaration and the `beforeEach` hook that assigns it). The `afterEach` cleanup is sufficient.
 
 ### Observations
 
-**O-1: Service Worker Lifecycle and processingTabs**
+**O-1: Fetch mock design**
 
-The `processingTabs` Set is scoped to the `defineBackground()` closure, which means it resets if the service worker is terminated and restarted by the browser. This is acceptable behavior since a terminated service worker also means any in-flight pipeline was aborted.
+The mock function (lines 46-66) correctly handles URL, URL object, and Request input types. The conditional branching properly extracts the URL string from each type, and the responses correctly simulate both successful PNG downloads (with Content-Type header) and 404 failures.
 
-**O-2: Notification Icon Path**
+**O-2: Manual imageMap modification pattern**
 
-The `iconUrl` uses `browser.runtime.getURL('/icon/128.png')` which matches the icon paths in `public/icon/`. The TypeScript types require `iconUrl` for `type: "basic"` notifications, which is correctly provided.
+The test manually adds a second image to the `imageMap` (line 43) to simulate the failure scenario. This is an intentional and appropriate pattern for testing the failure path, since `convertToMarkdown` only discovers images actually present in the HTML fixture. The synthetic addition enables testing of the failed image patching workflow.
 
-**O-3: ExtractionFailure Handling**
+**O-3: Asset filename handling across the pipeline**
 
-The `onMessage` listener now handles both `archive-page` and `extraction-failed` message types. The `ExtractionFailure` handler uses the exact notification message from the spec (FR-009): "Could not extract content from this page."
+The test correctly accounts for the design pattern where `convertToMarkdown` returns filenames with `assets/` prefix in the imageMap, `downloadImages` preserves these prefixes in returned assets, and then the test strips them before passing to `packageBundle` (which expects unprefixed filenames and adds the `assets/` prefix internally at line 44 of `bundle-packager.ts`). This design is consistent with existing tests in `image-downloader.test.ts`.
+
+**O-4: Comprehensive spec requirement coverage**
+
+All 12 requirements from the task description (lines 1036-1050) are directly addressed: HTML parsing, extraction, metadata, Markdown conversion, fetch mocking with success/404 paths, image downloading, failed asset patching, frontmatter generation, packaging, zip structure validation, failed image URL restoration, content leakage checks, and the null extraction failure case.
 
 ---
 
 ## Prior Observations Carried Forward
 
+### TASK-018c
+
+- Badge state management, notification display, and concurrent-click guard implemented correctly per spec.
+- Notification icon and messages match spec requirements exactly.
+
 ### TASK-018b
 
-- All seven pipeline steps from TASK-018b are implemented in the correct order.
-- The try/catch wraps the entire pipeline. Error message matches the spec string exactly.
-- The `browser.runtime.onMessage.addListener` callback correctly returns `true` for async response handling.
+- All seven pipeline steps implemented in correct order.
+- Error handling paths properly documented and tested.
 
 ### TASK-015
 
@@ -90,4 +101,4 @@ The `onMessage` listener now handles both `archive-page` and `extraction-failed`
 
 ## Verdict Rationale
 
-All acceptance criteria are met. Badge states, notification messages, colors, and timing all match the spec exactly. The concurrent-click guard is correctly implemented. No blocking or non-blocking findings.
+All acceptance criteria from the task specification are met. Both `npm test` (182 tests across 12 suites) and `npm run typecheck` pass. The test comprehensively covers the end-to-end pipeline with realistic fixtures, proper fetch mocking, and detailed assertions on zip structure, content, and failed image patching. The single non-blocking finding (unused variable) is a minor code quality nit that does not affect test correctness.
