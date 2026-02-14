@@ -25,30 +25,43 @@ npm run dev:firefox    # Firefox (MV2) with HMR
 ### Loading the extension
 
 **Firefox:**
-1. Navigate to `about:debugging` → This Firefox
+1. Navigate to `about:debugging#/runtime/this-firefox`
 2. Click "Load Temporary Add-on..."
-3. Select `manifest.json` from `.output/firefox-mv2/`
+3. Select any file inside `dist/firefox-mv2/` (e.g. `manifest.json`)
+4. The extension appears in the toolbar and context menu
+
+To debug: click "Inspect" next to the extension on the `about:debugging` page to open the background script console.
 
 **Chrome:**
 1. Navigate to `chrome://extensions`
-2. Enable "Developer mode"
+2. Enable "Developer mode" (toggle in top-right)
 3. Click "Load unpacked"
-4. Select the `.output/chrome-mv3/` directory
+4. Select the `dist/chrome-mv3/` directory
+5. The extension appears in the toolbar (pin it from the puzzle-piece menu if needed)
 
-Dev mode watches for changes and auto-reloads the extension.
+To debug: click "Inspect views: service worker" on the extension card to open the background script console.
+
+### Reloading after changes
+
+After rebuilding (`npm run build` / `npm run build:firefox`):
+
+- **Firefox:** Click the reload icon (circular arrow) next to the extension on `about:debugging`
+- **Chrome:** Click the reload icon on the extension card at `chrome://extensions`
+
+Dev mode (`npm run dev` / `npm run dev:firefox`) watches for changes and auto-reloads.
 
 ## Production Build
 
 ```bash
-npm run build            # Chrome → .output/chrome-mv3/
-npm run build:firefox    # Firefox → .output/firefox-mv2/
+npm run build            # Chrome MV3 → dist/chrome-mv3/
+npm run build:firefox    # Firefox MV2 → dist/firefox-mv2/
 ```
 
 ## Package for Distribution
 
 ```bash
-npm run zip              # → .output/textbundler-0.1.0-chrome.zip
-npm run zip:firefox      # → .output/textbundler-0.1.0-firefox.zip + sources.zip
+npm run zip              # → dist/textbundler-0.1.0-chrome.zip
+npm run zip:firefox      # → dist/textbundler-0.1.0-firefox.zip + sources.zip
 ```
 
 ## Quality Checks
