@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import JSZip from 'jszip';
 import { parseHTML } from './helpers/parse-html';
 import { readFixture } from './helpers/read-fixture';
@@ -12,12 +12,6 @@ import { packageBundle } from '../lib/bundle-packager';
 import type { ImageMap } from '../lib/types';
 
 describe('Full Pipeline Integration', { timeout: 10000 }, () => {
-  let originalFetch: typeof globalThis.fetch;
-
-  beforeEach(() => {
-    originalFetch = globalThis.fetch;
-  });
-
   afterEach(() => {
     vi.unstubAllGlobals();
   });
