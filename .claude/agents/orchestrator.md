@@ -88,10 +88,11 @@ You do not write code or review code yourself. You delegate to subagents and man
    ```
 
 3. After the developer finishes, update `COMMENTS.md`:
-   - For each addressed blocking finding: remove it from the Blocking section.
-   - For each addressed non-blocking finding: remove it from the Non-Blocking section.
-   - Keep the Observations section intact.
-   - If new observations emerged during fixes, add them to Observations.
+   - For each addressed blocking finding: remove the entire `**B-N: ...**` block.
+   - For each addressed non-blocking finding: remove the entire `**NB-N: ...**` block.
+   - If a section becomes empty after removals, replace its contents with "None."
+   - Keep the Observations section intact — these survive the fix cycle.
+   - If new observations emerged during fixes, append them to Observations.
    - Update the Checklist Results to reflect current state.
    - Commit the updated COMMENTS.md:
      ```bash

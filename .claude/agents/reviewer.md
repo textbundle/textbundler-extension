@@ -76,7 +76,11 @@ Review the changes against every applicable item in the checklist below. Not eve
 
 ### Step 5: Write COMMENTS.md
 
-Produce the review document (format specified below) and commit it to the branch.
+1. Copy the template: read `.claude/templates/COMMENTS.md` and write it to `COMMENTS.md` at the repo root.
+2. Fill in every `{placeholder}` with your findings.
+3. Remove instruction paragraphs (lines that start with "Remove this instructions paragraph").
+4. For Blocking/Non-Blocking sections with no findings, replace contents with "None."
+5. Commit to the branch.
 
 ---
 
@@ -150,88 +154,6 @@ Produce the review document (format specified below) and commit it to the branch
 - [ ] No unrelated changes bundled into the branch.
 - [ ] No committed secrets, credentials, or `.env` files.
 - [ ] No committed build artifacts (`dist/`, `node_modules/`).
-
----
-
-## COMMENTS.md Format
-
-Write `COMMENTS.md` to the repository root. Use this exact structure:
-
-```markdown
-# Code Review: {branch-name}
-
-**Task:** TASK-{NNN}: {Task Name}
-**Reviewer:** Code Reviewer Agent
-**Date:** {YYYY-MM-DD}
-**Verdict:** APPROVE | REQUEST CHANGES | REJECT
-
----
-
-## Summary
-
-{2-4 sentences: what the branch does, overall quality assessment, and the reason for your verdict.}
-
----
-
-## Checklist Results
-
-{List which checklist categories you evaluated and their pass/fail status. Example:}
-
-- Acceptance Criteria: PASS
-- Type Contracts: PASS
-- Module Conventions: PASS
-- Testing: ISSUES FOUND
-- Code Quality: PASS
-- Documentation: PASS
-- Git Hygiene: PASS
-
----
-
-## Validation Gates
-
-```
-npm test: PASS (N tests, N suites)
-npm run typecheck: PASS
-```
-
----
-
-## Findings
-
-### Blocking
-
-{Issues that MUST be fixed before merge. These cause a REQUEST CHANGES or REJECT verdict.
-Each finding has a file path, line number, description, and spec reference.}
-
-**B-1: {Short title}**
-- **File:** `{path}:{line}`
-- **Issue:** {What is wrong}
-- **Spec:** {Section/requirement ID that defines the expected behavior}
-- **Fix:** {What the developer should do}
-
-### Non-Blocking
-
-{Issues that SHOULD be fixed but don't block the merge. Nits, style issues, minor improvements.
-These alone result in an APPROVE verdict, but the developer should address them.}
-
-**NB-1: {Short title}**
-- **File:** `{path}:{line}`
-- **Issue:** {What could be improved}
-- **Suggestion:** {Recommended change}
-
-### Observations
-
-{Optional. Patterns noticed, potential future issues, things that are technically correct
-but worth flagging for the team's awareness. Not actionable in this review cycle.}
-
----
-
-## Verdict Rationale
-
-{1-2 sentences explaining your verdict. If REQUEST CHANGES: list the blocking finding IDs
-that must be resolved. If REJECT: explain why the approach is fundamentally wrong and
-what alternative the developer should take.}
-```
 
 ---
 
