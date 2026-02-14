@@ -1,6 +1,6 @@
 # Solution Specification: TextBundler
 
-**Version:** 1.1
+**Version:** 1.2
 **Date:** 2026-02-14
 **Author:** Solution Architect (AI-Assisted)
 **Status:** Draft
@@ -457,7 +457,8 @@ textbundler/
 │   │   └── .gitkeep
 │   ├── helpers/
 │   │   ├── parse-html.ts             # linkedom helper to parse fixture files
-│   │   └── read-fixture.ts           # Read fixture file by name
+│   │   ├── read-fixture.ts           # Read fixture file by name
+│   │   └── normalize-markdown.ts     # Whitespace normalization for golden file comparison
 │   ├── smoke.test.ts
 │   ├── lazy-image-resolver.test.ts
 │   ├── readability-runner.test.ts
@@ -564,47 +565,82 @@ Not applicable in the traditional sense (no server). Debugging strategy:
 - Acceptance: Logger output includes module name prefix. In test mode, log calls can be captured and asserted. Production build strips debug/info calls (verify by inspecting built output).
 - Reqs: —
 
-**TASK-003: Vitest Configuration + linkedom Test Helper + Readability Smoke Test**
+**TASK-003: Vitest Configuration + Test Helpers + Readability Smoke Test**
 - Depends on: TASK-001
 - Size: S
-- Description: Configure Vitest in `vitest.config.ts` (or in `wxt.config.ts` if WXT supports it). Set up test environment as `node` (not jsdom — we use linkedom explicitly). Create `tests/helpers/parse-html.ts` that exports a `parseHTML(html: string): Document` function using linkedom's `parseHTML`. This function is the standard way all tests create Document objects from HTML fixture strings or files. Create `tests/helpers/read-fixture.ts` that reads a fixture file from `tests/fixtures/` by name and returns its contents as a string. Write `tests/smoke.test.ts` with two tests:
+- Description: Configure Vitest in `vitest.config.ts` using WXT's Vitest plugin (`wxt/testing/vitest-plugin` if available, otherwise standalone). Set up test environment as `node` (not jsdom — we use linkedom explicitly). Define `__DEV__: true` in the Vitest config's `define` block so the logger module works in tests without ReferenceError. Create test helpers and a smoke test:
+
+  **Test helpers:**
+  1. `tests/helpers/parse-html.ts` — exports `parseHTML(html: string): Document` using linkedom's `parseHTML`. This is the standard way all tests create Document objects from HTML fixture strings or files.
+  2. `tests/helpers/read-fixture.ts` — reads a fixture file from `tests/fixtures/` by name and returns its contents as a string.
+  3. `tests/helpers/normalize-markdown.ts` — exports `normalizeMarkdown(str: string): string` for golden file comparisons. Normalizes whitespace per Section 10.7: strip trailing whitespace from each line, normalize line endings to `\n`, collapse multiple consecutive blank lines to a single blank line, ensure exactly one trailing newline.
+
+  **Smoke test (`tests/smoke.test.ts`)** with three tests:
   1. Parse a minimal HTML string and assert the document has a `<body>`.
-  2. **Readability canary test:** Parse a minimal but valid article HTML (inline string with `<html><head><title>Test</title></head><body><article><h1>Title</h1><p>Paragraph one. Paragraph two. Paragraph three. This needs enough content for Readability to consider it an article.</p></article></body></html>`) and run `new Readability(doc).parse()`. Assert the result is non-null and has a non-empty `content` field. This validates that linkedom produces DOM objects compatible with Readability. If this test fails, the team must evaluate switching to JSDOM before proceeding with any Readability-dependent tasks.
-- Files: `vitest.config.ts`, `tests/helpers/parse-html.ts`, `tests/helpers/read-fixture.ts`, `tests/smoke.test.ts`
-- Acceptance: `npm test` runs and passes both smoke tests. linkedom successfully parses HTML into a Document object. Readability produces non-null output from linkedom-parsed HTML. Fixture reader loads files from `tests/fixtures/`.
+  2. **Readability canary test (5s timeout):** Parse a multi-paragraph article HTML (inline string with `<html><head><title>Test</title></head><body><article><h1>Title</h1><p>First paragraph with enough content for Readability heuristics.</p><p>Second paragraph with additional detail and substance.</p><p>Third paragraph to ensure the content body is large enough to trigger article detection.</p><p>Fourth paragraph. Readability typically needs several hundred characters of text content to confidently identify an article region.</p></article></body></html>`) and run `new Readability(doc).parse()`. Assert the result is non-null, has a non-empty `content` field, and `length > 0`. This test MUST have a Vitest timeout of 5000ms (`{ timeout: 5000 }`) to catch linkedom infinite loop bugs (see linkedom issue #43). If this test fails or times out, the team must switch to JSDOM before proceeding with any Readability-dependent tasks.
+  3. **Readability with non-article:** Parse a minimal non-article HTML (inline string with a `<form>` login page, no article structure) and assert `new Readability(doc).parse()` returns null. This validates the failure path works under linkedom.
+- Files: `vitest.config.ts`, `tests/helpers/parse-html.ts`, `tests/helpers/read-fixture.ts`, `tests/helpers/normalize-markdown.ts`, `tests/smoke.test.ts`
+- Acceptance: `npm test` runs and passes all three smoke tests. linkedom successfully parses HTML into a Document object. Readability produces non-null output with `length > 0` from linkedom-parsed article HTML. Readability returns null for non-article HTML. Canary test completes within 5 seconds (no infinite loop). `normalizeMarkdown()` strips trailing whitespace, normalizes line endings, and collapses blank lines. Fixture reader loads files from `tests/fixtures/`. `__DEV__` is defined in test environment.
 - Reqs: —
 
 **TASK-004: Tier 1 Test Fixtures (Curated HTML Fragments)**
 - Depends on: TASK-003
 - Size: M
-- Description: Create curated HTML fixture files in `tests/fixtures/`. Each fixture is a minimal but realistic HTML document targeting specific conversion rules and extraction behaviors. Fixtures are checked into git. Where applicable, create corresponding `.expected.md` golden files containing the expected Markdown output following the conventions in Section 10.7.
-
-  **IMPORTANT:** Before creating golden files, review Section 10.7 (Golden File Conventions) to understand the formatting rules. The golden files created in this task establish the baseline for all subsequent Markdown conversion tests. Changing conventions after Phase 3 tasks are complete requires updating all golden files.
+- Description: Create curated HTML fixture files in `tests/fixtures/`. Each fixture is a minimal but realistic HTML document targeting specific conversion rules and extraction behaviors. Fixtures are checked into git. **This task creates HTML fixtures only — golden files (`.expected.md`) are generated in TASK-004a after the Turndown base configuration exists.**
 
   Fixture manifest:
 
-  | File | Purpose | Golden file? |
-  |---|---|---|
-  | `basic-article.html` | Headings (h1-h6), paragraphs, bold, italic, links, ordered/unordered lists, blockquotes, horizontal rules | Yes |
-  | `code-blocks.html` | Fenced code blocks with language annotations, inline code | Yes |
-  | `html-table.html` | Complex table with thead, tbody, colspan, rowspan | Yes |
-  | `figure-caption.html` | `<figure>` with `<img>` and `<figcaption>` | Yes |
-  | `aside-admonition.html` | `<aside>` elements with various classes (note, tip, warning, none) and roles | Yes |
-  | `details-summary.html` | `<details>` with `<summary>` | Yes |
-  | `sup-sub.html` | `<sup>` and `<sub>` for footnotes, citations, math | Yes |
-  | `lazy-images.html` | Images with `data-src`, `data-lazy-src`, `data-original`, `srcset`, `<picture>` with `<source>` | No (tested by resolver unit tests) |
-  | `og-metadata.html` | Full OG tags, JSON-LD `@type: Article`, `<meta name="author">`, `<meta name="keywords">`, `<link rel="canonical">`, `<time>` element | No (tested by extractor unit tests) |
-  | `minimal-metadata.html` | Only `<title>` and bare `<body>` — no OG, no meta, no JSON-LD | No |
-  | `non-article.html` | A page that is NOT an article: a login form or search results page with no identifiable article content. Readability should return null for this fixture. | No |
-  | `embedded-video.html` | YouTube and Vimeo `<iframe>` embeds within article content | Yes |
-  | `mixed-content.html` | Realistic full article combining all element types above | Yes |
+  | File | Purpose |
+  |---|---|
+  | `basic-article.html` | Headings (h1-h6), paragraphs, bold, italic, links, ordered/unordered lists, blockquotes, horizontal rules |
+  | `code-blocks.html` | Fenced code blocks with language annotations, inline code |
+  | `html-table.html` | Complex table with thead, tbody, colspan, rowspan |
+  | `figure-caption.html` | `<figure>` with `<img>` and `<figcaption>` |
+  | `aside-admonition.html` | `<aside>` elements with various classes (note, tip, warning, none) and roles |
+  | `details-summary.html` | `<details>` with `<summary>` |
+  | `sup-sub.html` | `<sup>` and `<sub>` for footnotes, citations, math |
+  | `lazy-images.html` | Images with `data-src`, `data-lazy-src`, `data-original`, `srcset`, `<picture>` with `<source>` |
+  | `og-metadata.html` | Full OG tags, JSON-LD `@type: Article`, `<meta name="author">`, `<meta name="keywords">`, `<link rel="canonical">`, `<time>` element |
+  | `minimal-metadata.html` | Only `<title>` and bare `<body>` — no OG, no meta, no JSON-LD |
+  | `non-article.html` | A page that is NOT an article: a login form or search results page with no identifiable article content. Readability should return null for this fixture. |
+  | `embedded-video.html` | YouTube and Vimeo `<iframe>` embeds within article content |
+  | `mixed-content.html` | Realistic full article combining all element types above |
 
   Each HTML fixture must be a complete, valid HTML document (with `<!DOCTYPE html>`, `<html>`, `<head>`, `<body>`) so that linkedom parses it correctly and Readability can operate on it. The article content should be wrapped in an `<article>` tag or equivalent structure that Readability can identify. Include realistic non-content elements (a `<nav>`, a `<footer>`, a sidebar `<aside>`) in `mixed-content.html` to test extraction isolation.
 
   The `non-article.html` fixture should contain a login form, navigation links, and no article body — representing a page where Readability cannot identify content.
-- Files: `tests/fixtures/*.html`, `tests/fixtures/*.expected.md`
-- Acceptance: All fixture files are valid HTML parseable by linkedom. Golden files follow the conventions in Section 10.7. At least 13 fixture files created per the manifest above. `non-article.html` causes Readability to return null.
+- Files: `tests/fixtures/*.html`
+- Acceptance: All fixture files are valid HTML parseable by linkedom. At least 13 fixture files created per the manifest above. `non-article.html` causes Readability to return null.
 - Reqs: FR-001, FR-002, FR-003
+
+**TASK-004a: Golden File Generation**
+- Depends on: TASK-004, TASK-011
+- Size: S
+- Description: Generate golden files (`.expected.md`) for each HTML fixture that has a corresponding Markdown conversion test. The workflow:
+  1. For each fixture with a golden file (see list below), run the Turndown converter (from TASK-011, with base config + GFM plugin) against the fixture's article content.
+  2. Review the raw Turndown output. Apply fix-ups per Section 10.7 conventions: normalize whitespace, ensure LF line endings, one trailing newline, correct image reference syntax.
+  3. Save the result as `{fixture-name}.expected.md`.
+
+  Golden files to generate:
+
+  | Fixture | Golden file |
+  |---|---|
+  | `basic-article.html` | `basic-article.expected.md` |
+  | `code-blocks.html` | `code-blocks.expected.md` |
+  | `html-table.html` | `html-table.expected.md` |
+  | `figure-caption.html` | `figure-caption.expected.md` |
+  | `aside-admonition.html` | `aside-admonition.expected.md` |
+  | `details-summary.html` | `details-summary.expected.md` |
+  | `sup-sub.html` | `sup-sub.expected.md` |
+  | `embedded-video.html` | `embedded-video.expected.md` |
+  | `mixed-content.html` | `mixed-content.expected.md` |
+
+  **Design principle (DD-14):** Golden files represent the *desired* output, not necessarily the *default* Turndown output. For base elements (headings, paragraphs, lists, links, code blocks, blockquotes), vanilla Turndown + GFM output should be correct and only need whitespace normalization. For elements requiring custom rules (tables, figures, asides, details, sup/sub, iframes), the golden files should reflect the *custom rule output* described in TASK-012a/b/c — not Turndown's default conversion. The agent creating golden files should manually author the expected output for custom-rule elements based on the rule specifications.
+
+  **Pragmatism principle (DD-15):** If during TASK-012a/b/c implementation, a custom Turndown rule turns out to require disproportionate code complexity for marginal output quality improvement over vanilla Turndown, flag it for review. The golden file and rule spec can be revised to accept Turndown's default output if the custom rule is not worth the complexity. The goal is useful Markdown, not perfect Markdown.
+- Files: `tests/fixtures/*.expected.md`
+- Acceptance: Golden files exist for all 9 fixtures listed above. Each golden file follows Section 10.7 conventions. Golden files for base Markdown elements match `normalizeMarkdown(turndownOutput)`. Golden files for custom-rule elements match the specifications in TASK-012a/b/c.
+- Reqs: FR-002
 
 **TASK-005: Fixture Download Script + Tier 2 Corpus**
 - Depends on: TASK-003
@@ -670,9 +706,13 @@ Not applicable in the traditional sense (no server). Debugging strategy:
 **TASK-009: Readability Runner**
 - Depends on: TASK-008
 - Size: M
-- Description: Write tests first (`tests/readability-runner.test.ts`), then implement `lib/readability-runner.ts`. The module exports a function `extractArticle(document: Document): ArticleResult | null`. It clones the document (Readability mutates the DOM), runs `resolveLazyImages()` on the clone, then runs `new Readability(clone).parse()`. If Readability returns a result with non-empty `content`, return an `ArticleResult` object (mapping Readability's output to the interface defined in Section 4.2). If it returns null or empty content, return null. The function must not mutate the original document. Log (via logger) the extraction result: title, content length, image count.
+- Description: Write tests first (`tests/readability-runner.test.ts`), then implement `lib/readability-runner.ts`. The module exports a function `extractArticle(document: Document): ArticleResult | null`. It clones the document (Readability mutates the DOM), runs `resolveLazyImages()` on the clone, then runs `new Readability(clone).parse()` **with a 10-second timeout**. If Readability returns a result with non-empty `content`, return an `ArticleResult` object (mapping Readability's output to the interface defined in Section 4.2). If it returns null or empty content, return null. The function must not mutate the original document. Log (via logger) the extraction result: title, content length, image count.
+
+  **Readability timeout:** linkedom has a documented issue (#43) where certain DOM structures can cause Readability to enter an infinite loop. To prevent the extension from beachballing, wrap the Readability `parse()` call with a timeout. Implementation approach: run `parse()` and race it against a `setTimeout` rejection (e.g., `Promise.race` if made async, or a synchronous time-check approach). Since Readability's `parse()` is synchronous and cannot be interrupted via `AbortController`, the practical mitigation is:
+  - In **production** (extension context): Readability runs synchronously in the content script. A synchronous infinite loop would freeze the tab. Accept this risk — it's the same behavior Firefox Reader View has. The per-image and per-pipeline timeouts in the background script (Section 2.4) provide outer guardrails.
+  - In **tests**: Set a Vitest per-test timeout of 10000ms on all Readability tests. If a test hangs, it fails rather than blocking CI indefinitely. Log a warning: "Readability may be incompatible with linkedom for this fixture — see linkedom issue #43."
 - Files: `lib/readability-runner.ts`, `tests/readability-runner.test.ts`
-- Acceptance: Extracts article content from `basic-article.html`, `mixed-content.html` fixtures. Returns null for `non-article.html` fixture. Does not mutate the input document. Logger emits info-level extraction summary.
+- Acceptance: Extracts article content from `basic-article.html`, `mixed-content.html` fixtures. Returns null for `non-article.html` fixture. Does not mutate the input document. Logger emits info-level extraction summary. All Readability tests have a 10s timeout.
 - Reqs: FR-001
 
 **TASK-010: Metadata Extractor**
@@ -701,9 +741,13 @@ Not applicable in the traditional sense (no server). Debugging strategy:
 **TASK-011: Turndown Base Configuration**
 - Depends on: TASK-004, TASK-007
 - Size: S
-- Description: Write tests first (`tests/markdown-converter.test.ts` — base tests), then implement `lib/markdown-converter.ts`. Initialize Turndown with GFM plugin. Configuration: `headingStyle: "atx"`, `hr: "---"`, `bulletListMarker: "-"`, `codeBlockStyle: "fenced"`. Set the default link rule to preserve absolute URLs. Export a function `convertToMarkdown(html: string): { markdown: string; imageMap: ImageMap }`. The `imageMap` is populated by the image rewriting rule (TASK-012c). For this task, only the base configuration is set up; custom rules are added in subsequent tasks.
+- Description: Write tests first (`tests/markdown-converter.test.ts` — base tests), then implement `lib/markdown-converter.ts`. Initialize Turndown with GFM plugin. Configuration: `headingStyle: "atx"`, `hr: "---"`, `bulletListMarker: "-"`, `codeBlockStyle: "fenced"`. Set the default link rule to preserve absolute URLs. Export a function `convertToMarkdown(html: string): { markdown: string; imageMap: ImageMap }`. The `imageMap` is populated by the image rewriting rule (TASK-012b). For this task, only the base configuration is set up; custom rules are added in subsequent tasks.
+
+  **Note:** TASK-004a (golden file generation) depends on this task. After TASK-011 is complete, TASK-004a should be executed to generate golden files using the configured Turndown instance before proceeding to TASK-012a. Initial tests for this task should use inline assertions (verify headings, paragraphs, lists, etc. convert to expected Markdown strings). Golden file comparison tests are added when TASK-004a produces the `.expected.md` files.
+
+  **Heading preservation:** Heading levels are preserved exactly from the HTML: `<h1>` → `#`, `<h2>` → `##`, etc. Do not promote or demote heading levels.
 - Files: `lib/markdown-converter.ts`, `tests/markdown-converter.test.ts` (base tests)
-- Acceptance: Converts `basic-article.html` content to Markdown matching `basic-article.expected.md` golden file. Headings, paragraphs, bold, italic, links, lists, code blocks, blockquotes, horizontal rules all convert correctly. External link URLs are preserved as absolute.
+- Acceptance: Converts `basic-article.html` content to Markdown. Headings, paragraphs, bold, italic, links, lists, code blocks, blockquotes, horizontal rules all convert correctly. Heading levels are preserved (not promoted/demoted). External link URLs are preserved as absolute.
 - Reqs: FR-002
 
 **TASK-012a: Custom Turndown Rules — HTML Preservation**
@@ -1014,11 +1058,9 @@ TASK-001 ──► TASK-002 ─────────────────�
   │                   │                                                            │
   │                   ├──► TASK-010 ──────────────────────────────► TASK-017        │
   │                   │                                                            │
-  │                   ├──► TASK-011 ──► TASK-012a ──► TASK-012b ──► TASK-015        │
-  │                   │                    │                          ▲             │
-  │                   │                    └──► TASK-012c             │             │
-  │                   │                                              │             │
-  │                   └──► (golden files for 012a/b/c)               │             │
+  │                   ├──► TASK-011 ──► TASK-004a ──► TASK-012a ──► TASK-012b ──► TASK-015
+  │                   │                                  │                          ▲
+  │                   │                                  └──► TASK-012c             │
   │                                                                  │             ▼
   ├──► TASK-005 ───────────────────────────────────────────────────────────────► TASK-021
   │                                                                  │
@@ -1042,17 +1084,17 @@ TASK-001 ──► TASK-002 ─────────────────�
                                                                                    ▼
                                                                      TASK-018c ──► TASK-020 ──► TASK-021
 
-Critical path: 001 → 003 → 004 → 011 → 012a → 012b → 015 → 018b → 018c → 020
+Critical path: 001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 → 018b → 018c → 020
 ```
 
 ### 7.4 Risk-Ordered Priorities
 
 | Risk | Task(s) | Why Front-Loaded |
 |---|---|---|
-| linkedom + Readability compatibility | TASK-003 | The Readability canary test in TASK-003 validates the entire test architecture. If linkedom doesn't work with Readability, we must switch to JSDOM before any extraction tasks begin. |
+| linkedom + Readability compatibility | TASK-003 | The Readability canary test in TASK-003 (with 5s timeout) validates the entire test architecture. linkedom issue #43 documents a potential infinite loop with Readability. If the canary test fails or times out, switch to JSDOM before any extraction tasks begin. |
 | Test infrastructure works for agents | TASK-001, 002, 003, 004 | If the test setup is broken, all subsequent TDD tasks are blocked. Agents must be able to run `npm test` from TASK-004 onward. |
 | Readability extraction quality | TASK-008, 009 | If Readability doesn't work well enough on fixtures, the whole product fails. Validate early with Tier 1 fixtures. |
-| Turndown custom rules complexity | TASK-012a, 012b, 012c | Custom rules are the riskiest conversion logic. Golden file tests catch regressions. Split into 3 tasks to isolate failures. |
+| Turndown custom rules complexity | TASK-012a, 012b, 012c | Custom rules are the riskiest conversion logic. Golden file tests catch regressions. Split into 3 tasks to isolate failures. If a custom rule requires disproportionate complexity vs. accepting Turndown's default, revise the golden file and rule spec per DD-15. |
 | Image download with cookies | TASK-014 | `fetch()` from service worker with `credentials: "include"` — verify this works for auth'd images. DA-02 risk with concrete mitigation path. |
 | Failed image URL patching | TASK-014a | The `patchFailedImageUrls()` function is critical for NFR-005 (graceful degradation). Must work for both Markdown and inline HTML image references. |
 | JSZip in service worker | TASK-015 | Confirm JSZip works in service worker context (no DOM dependency). |
@@ -1066,10 +1108,10 @@ Critical path: 001 → 003 → 004 → 011 → 012a → 012b → 015 → 018b �
 | DA-01 | `browser.scripting.executeScript()` can inject bundled content script from service worker in both Firefox and Chrome. WXT handles the MV2/MV3 abstraction for this. | WXT docs, MV3 spec | Would need to declare content script in manifest with `<all_urls>`, increasing permission scope. | Fall back to manifest-declared content scripts with `<all_urls>` permission. |
 | DA-02 | `fetch()` from service worker sends cookies for the target domain (for auth'd image downloads) when using `credentials: "include"`. | Browser fetch spec | Chrome MV3 service workers may not forward cookies consistently for cross-origin requests. | Route image downloads through the content script via message passing: background sends URLs to content script, content script fetches (has page cookies), sends ArrayBuffers back. Implement service worker fetch first; add content script fallback if testing reveals issues. |
 | DA-03 | JSZip works in service worker context (no DOM APIs required). | JSZip docs claim no DOM dependency | Would need to run packaging in content script or offscreen document. | Use Chrome's offscreen document API as fallback for JSZip operations. |
-| DA-04 | Readability can run on a cloned document or a linkedom-parsed document without degraded extraction quality. | Readability operates primarily on body content and text heuristics. | linkedom lacks layout properties (`offsetHeight`, `offsetWidth`, computed styles) that Readability may use in scoring. Extraction results in tests may differ from production. | TASK-003 includes a Readability canary test. If linkedom fails, switch to JSDOM. Accept that test results are an approximation — real browser testing validates production behavior. The Tier 1 fixtures are designed to have strong article signals that don't depend on layout scoring. |
+| DA-04 | Readability can run on a cloned document or a linkedom-parsed document without degraded extraction quality. | Readability operates primarily on body content and text heuristics. | linkedom lacks layout properties (`offsetHeight`, `offsetWidth`, computed styles) that Readability may use in scoring. linkedom issue #43 documents a potential infinite loop when combined with Readability. Extraction results in tests may differ from production. | TASK-003 includes a Readability canary test with a 5s timeout to catch infinite loops. TASK-009 Readability tests have 10s timeouts. If linkedom fails, switch to JSDOM. Accept that test results are an approximation — real browser testing validates production behavior. The Tier 1 fixtures are designed to have strong article signals that don't depend on layout scoring. |
 | DA-05 | Single content script injection captures fully-rendered DOM including SPA content. Content scripts see the rendered DOM. | WebExtensions spec | Some SPAs may need delayed injection or mutation observers (A-007). Addressed by Phase 2 manual selection (FR-010). | Phase 2 FR-010 provides manual content selection as fallback. |
 | DA-06 | WXT's `@wxt-dev/browser` provides full API coverage for `scripting`, `action`, `contextMenus`, `downloads`, and `notifications` across Firefox and Chrome. | WXT documentation | May need to use raw `chrome.*` APIs for specific calls. | WXT has an active community and frequent releases; file issues for missing APIs. |
-| DA-07 | linkedom parses real-world HTML accurately enough for Readability to produce results comparable to browser DOM parsing. | linkedom documentation, usage in WXT itself | Readability may rely on DOM properties not implemented by linkedom. Test results may give false confidence. | Tier 1 fixtures are curated with strong article signals. Tier 2 smoke tests accept minor deviations. Real browser manual testing validates production. TASK-003 canary test catches fundamental incompatibility early. |
+| DA-07 | linkedom parses real-world HTML accurately enough for Readability to produce results comparable to browser DOM parsing. | linkedom documentation, usage in WXT itself | Readability may rely on DOM properties not implemented by linkedom (offsetHeight, offsetWidth, getComputedStyle). linkedom issue #43 documents potential infinite loops. Test results may give false confidence. | Tier 1 fixtures are curated with strong article signals. Tier 2 smoke tests accept minor deviations. Real browser manual testing validates production. TASK-003 canary test with 5s timeout catches fundamental incompatibility and infinite loops early. All Readability tests have 10s timeouts (TASK-009). |
 | DA-08 | `wget` captures server-rendered HTML accurately for article-style sites (news, blogs, Wikipedia, MDN). | Article sites are primarily server-rendered | JS-rendered SPAs will have incomplete HTML. This is acceptable — SPAs are explicitly edge cases (OQ-007, R-001). | Tier 2 corpus focuses on server-rendered sites. SPA handling deferred to Phase 2 (FR-010). |
 
 ---
@@ -1091,6 +1133,8 @@ Critical path: 001 → 003 → 004 → 011 → 012a → 012b → 015 → 018b �
 | DD-11 | TDD with test infrastructure first over code-first development | Implement features first, add tests later | Ensures every pipeline module is testable from the start. Agents can verify their changes via `npm test`. Prevents test debt. | — |
 | DD-12 | Optimistic image URL rewriting with post-hoc patching over download-first approach | Download images before Markdown conversion; pass download results to converter | Optimistic rewriting keeps the converter stateless (it doesn't need to know about download results). Patching is a simple `replaceAll()` on unique, deterministic filenames. The alternative would couple the converter to the downloader, complicating both modules. | FR-004, NFR-005 |
 | DD-13 | Split TASK-012 (7 rules) into 3 subtasks | Single large task | Each subtask is independently testable and reviewable. Isolates failures: a bug in aside detection doesn't block table preservation. Reduces cognitive load per task for agents. | FR-002 |
+| DD-14 | Golden files generated from Turndown output + agent fix-ups, not hand-authored | Hand-authored golden files; or purely auto-generated without review | Turndown-generated output avoids transcription errors in hand-authoring. Agent review catches Turndown quirks and applies Section 10.7 conventions. Golden files for custom-rule elements are manually authored to match rule specs since the rules don't exist yet at generation time. | FR-002 |
+| DD-15 | Pragmatism over perfection for custom Turndown rules | Always implement custom rules as specified | If a custom Turndown rule requires disproportionate code complexity (10x the code of accepting Turndown's default), the golden file and rule spec should be revised to accept the default. The goal is useful Markdown archives, not pixel-perfect conversion. Flag for review rather than silently accepting subpar output. | FR-002, NFR-009 |
 
 ---
 
@@ -1098,7 +1142,7 @@ Critical path: 001 → 003 → 004 → 011 → 012a → 012b → 015 → 018b �
 
 ### 10.1 Execution Order
 
-Tasks MUST be executed in the order listed in Section 7.2. Each task's `Depends on` field defines hard prerequisites. Do not parallelize tasks that share dependencies. The critical path is: TASK-001 → 003 → 004 → 011 → 012a → 012b → 015 → 018b → 018c → 020.
+Tasks MUST be executed in the order listed in Section 7.2. Each task's `Depends on` field defines hard prerequisites. Do not parallelize tasks that share dependencies. The critical path is: TASK-001 → 003 → 004 → 011 → 004a → 012a → 012b → 015 → 018b → 018c → 020.
 
 ### 10.2 Validation Gates
 
@@ -1106,11 +1150,13 @@ After each task, run `npm test` and `npm run typecheck`. Both must pass before p
 
 ### 10.3 Testing Strategy
 
-- **Unit tests:** Each `lib/` module has a corresponding test file in `tests/`. Tests use linkedom for DOM parsing and Vitest mocks for browser APIs and `fetch()`.
-- **Golden file tests:** Markdown conversion tests compare output against `.expected.md` files per Section 10.7 conventions.
+- **Unit tests:** Each `lib/` module has a corresponding test file in `tests/`. Tests use linkedom for DOM parsing and Vitest mocks for `fetch()`.
+- **Golden file tests:** Markdown conversion tests compare output against `.expected.md` files per Section 10.7 conventions. Golden files are generated (not hand-authored) — see TASK-004a workflow.
 - **Integration tests:** `tests/pipeline.test.ts` tests the full pipeline from HTML input to zip output. `tests/sites.test.ts` smoke-tests against real-world page snapshots.
-- **No network calls in any test.** Image downloads are mocked. Tier 2 fixtures are pre-downloaded.
+- **No network calls in any test.** Image downloads are mocked via `vi.stubGlobal('fetch', ...)`. Tier 2 fixtures are pre-downloaded.
 - **CLI-verifiable:** `npm test` is the single command. Output is clear pass/fail. No browser interaction needed.
+- **Browser API mocking:** The `lib/` modules are designed to be browser-API-free. All `browser.*` calls are confined to `entrypoints/` files. Phase 5 tasks (TASK-017, 018a/b/c) that need browser API mocks create them locally in their test files using `vi.mock()` or `vi.stubGlobal()`. There is no shared browser mock setup — each test file mocks only the APIs it needs.
+- **Readability timeout:** All tests that invoke Readability have a per-test Vitest timeout of 10000ms to catch potential linkedom infinite loop issues (see linkedom issue #43, DA-04).
 
 ### 10.4 Coding Conventions
 
@@ -1138,9 +1184,9 @@ See Section 6.2 for the complete project structure.
 
 ### 10.7 Golden File Conventions
 
-**IMPORTANT: Review this section before creating any golden files (TASK-004). The conventions established here govern all Markdown conversion tests.**
+**IMPORTANT: Review this section before creating any golden files (TASK-004a). The conventions established here govern all Markdown conversion tests.**
 
-Golden files (`.expected.md`) contain the exact expected Markdown output for a given HTML fixture, following these formatting rules:
+Golden files (`.expected.md`) are generated by running Turndown against HTML fixtures and applying fix-ups — not hand-authored from scratch. See TASK-004a for the generation workflow. They follow these formatting rules:
 
 **Whitespace:**
 - One blank line between block-level elements (headings, paragraphs, lists, code blocks, blockquotes).
@@ -1148,6 +1194,10 @@ Golden files (`.expected.md`) contain the exact expected Markdown output for a g
 - Line endings: LF only (`\n`), never `\r\n`.
 - File ends with a single trailing newline.
 - Nested list indentation: 4 spaces (Turndown default).
+
+**Headings:**
+- Heading levels are preserved exactly from HTML: `<h1>` → `#`, `<h2>` → `##`, etc.
+- Do not promote or demote heading levels. If an article starts with `<h3>`, use `###`.
 
 **Image references:**
 - Standalone images: `![alt text](assets/image-001.jpg)`
@@ -1164,11 +1214,11 @@ Golden files (`.expected.md`) contain the exact expected Markdown output for a g
 - Separated from surrounding content by blank lines.
 
 **Comparison in tests:**
-- Before comparing, normalize both actual and expected output:
-  1. Strip trailing whitespace from each line.
-  2. Normalize line endings to `\n`.
-  3. Ensure exactly one trailing newline.
-- Use a `normalizeMarkdown(str: string): string` helper function in `tests/helpers/` for this.
+- Before comparing, normalize both actual and expected output using `normalizeMarkdown()` from `tests/helpers/normalize-markdown.ts` (created in TASK-003). The function:
+  1. Strips trailing whitespace from each line.
+  2. Normalizes line endings to `\n`.
+  3. Collapses multiple consecutive blank lines to a single blank line.
+  4. Ensures exactly one trailing newline.
 
 **Example golden file (`basic-article.expected.md`):**
 
@@ -1232,3 +1282,4 @@ Inline `code` in a paragraph.
 |---|---|---|---|
 | 1.0 | 2026-02-14 | Solution Architect | Initial spec |
 | 1.1 | 2026-02-14 | Solution Architect | Address review feedback: add ArticleResult type (Section 4.2); restructure pipeline with optimistic image rewriting + post-hoc patching for failed images (Section 4.3, DD-12); add service worker lifetime analysis (Section 2.4); split TASK-012 into 012a/012b/012c (DD-13); split TASK-018 into 018a/018b/018c; add TASK-014a (image patcher) and TASK-014b (slug generator); add Readability canary test to TASK-003 (DA-04, DA-07); add non-article fixture to TASK-004; expand Tier 2 corpus to 20 specific URLs (TASK-005); add `credentials: "include"` to image fetch with content-script fallback path (DA-02); add cross-browser blob URL handling to TASK-016; specify slug generation algorithm (Section 4.7); specify image filename padding (3-digit); add golden file conventions (Section 10.7); add concrete mitigations to all design assumptions (Section 8); fix TASK-015 dependencies (remove TASK-014, add TASK-014b); clarify aside/admonition detection rules with precedence (TASK-012c); add error handling categories to TASK-018b. |
+| 1.2 | 2026-02-14 | Solution Architect | Address setup and testing review: add TASK-004a (golden file generation from Turndown output, depends on TASK-004 + TASK-011) — golden files are now generated, not hand-authored (DD-14); add pragmatism principle for custom rules (DD-15); strengthen TASK-003 Readability canary test with 5s timeout and multi-paragraph HTML to catch linkedom issue #43; add non-article canary test; add `normalizeMarkdown()` helper to TASK-003 and Section 6.2; add `__DEV__` define to vitest.config.ts; add 10s Readability timeout to TASK-009 tests; add heading level preservation rule to Section 10.7 and TASK-011; update Section 10.3 with browser API mock strategy (per-task in Phase 5) and Readability timeout guidance; update DA-04 and DA-07 with linkedom issue #43 reference and timeout mitigations; update critical path to include TASK-004a; update dependency graph. |
