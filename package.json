@@ -32,6 +32,7 @@
     "eslint": "^8.57.0",
     "linkedom": "^0.18.0",
     "prettier": "^3.3.0",
+    "puppeteer": "^24.37.3",
     "typescript": "^5.9.3",
     "vitest": "^3.0.0",
     "wxt": "^0.20.17"
