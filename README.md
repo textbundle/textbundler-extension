@@ -2,10 +2,23 @@
 
 A cross-browser extension (Firefox + Chrome) that captures web pages as self-contained Markdown archives in the [TextBundle](https://textbundle.org/) `.textpack` format. Built with [WXT](https://wxt.dev/) (Manifest V3/V2), TypeScript, and Vite.
 
+## Quick Start
+
+```bash
+git clone <repo-url> && cd textbundler
+npm install
+make chrome        # build + launch Chrome with extension loaded
+```
+
+That's it. Chrome for Testing is auto-installed on first run. Navigate to any article and click the toolbar icon to archive it.
+
+See [docs/TESTING.md](docs/TESTING.md) for the full testing guide.
+
 ## Prerequisites
 
 - Node.js (v18+)
 - npm
+- GNU Make
 
 ## Install
 
@@ -17,12 +30,30 @@ This installs dependencies and runs `wxt prepare` to generate TypeScript types.
 
 ## Development
 
+### Makefile targets (recommended)
+
+```bash
+make chrome        # build Chrome MV3 + launch with extension loaded
+make firefox       # build Firefox MV2 + launch via web-ext
+make build-all     # build both browsers
+make test          # Vitest
+make typecheck     # tsc --noEmit
+make lint          # ESLint
+make e2e           # Puppeteer end-to-end pipeline test
+make clean         # remove dist/ and .wxt/
+make chrome-clean  # wipe the Chrome test profile
+```
+
+`make chrome` uses a dedicated profile at `.chrome-profile/` — isolated from your personal Chrome, and always loads the freshly built extension. Run `make chrome-clean` to reset it.
+
+### npm scripts
+
 ```bash
 npm run dev            # Chrome (MV3) with HMR
 npm run dev:firefox    # Firefox (MV2) with HMR
 ```
 
-### Loading the extension
+### Loading the extension manually
 
 **Firefox:**
 1. Navigate to `about:debugging#/runtime/this-firefox`
@@ -48,7 +79,7 @@ After rebuilding (`npm run build` / `npm run build:firefox`):
 - **Firefox:** Click the reload icon (circular arrow) next to the extension on `about:debugging`
 - **Chrome:** Click the reload icon on the extension card at `chrome://extensions`
 
-Dev mode (`npm run dev` / `npm run dev:firefox`) watches for changes and auto-reloads.
+Dev mode (`npm run dev` / `npm run dev:firefox`) watches for changes and auto-reloads. `make chrome` / `make firefox` always rebuild before launching.
 
 ## Production Build
 
@@ -67,10 +98,9 @@ npm run zip:firefox      # → dist/textbundler-0.1.0-firefox.zip + sources.zip
 ## Quality Checks
 
 ```bash
-npm run test             # Vitest (182 tests, no network)
-npm run typecheck        # tsc --noEmit
-npm run lint             # ESLint
-npm run format           # Prettier
+make test                # or: npm run test
+make typecheck           # or: npm run typecheck
+make e2e                 # Puppeteer Chrome pipeline test
 ```
 
 Run a single test file:
@@ -131,9 +161,9 @@ Two-context event-driven pipeline:
 - Resolves lazy-loaded images
 - Runs Mozilla Readability for article extraction
 - Scrapes metadata from `<head>`, OG tags, JSON-LD
+- Converts HTML to Markdown (Turndown + GFM + custom rules) — runs here because Chrome MV3 service workers lack `DOMParser`
 
 **Background Service Worker** (`entrypoints/background.ts`):
-- Converts HTML to Markdown (Turndown + GFM + custom rules)
 - Downloads images in parallel (4 concurrent, 30s timeout)
 - Patches failed image URLs back to absolute
 - Builds YAML frontmatter
