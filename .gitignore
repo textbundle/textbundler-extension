@@ -13,6 +13,7 @@ dist
 stats.html
 stats-*.json
 .wxt
+.chrome-profile
 web-ext.config.ts
 
 # Editor directories and files

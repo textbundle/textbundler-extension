@@ -1,7 +1,8 @@
 EXTENSION_DIR := $(CURDIR)/dist/chrome-mv3
+CHROME_PROFILE := $(CURDIR)/.chrome-profile
 CHROME_TEST = $(shell ls -d "$(HOME)/.cache/puppeteer/chrome"/*/chrome-mac-arm64/*.app/Contents/MacOS/* 2>/dev/null | sort -V | tail -1)
 
-.PHONY: build build-firefox build-all test typecheck lint chrome firefox e2e clean ensure-chrome
+.PHONY: build build-firefox build-all test typecheck lint chrome chrome-clean firefox e2e clean ensure-chrome
 
 build:
 	npm run build
@@ -37,10 +38,14 @@ chrome: build ensure-chrome
 	fi; \
 	echo "Launching $$CHROME"; \
 	"$$CHROME" \
+		--user-data-dir="$(CHROME_PROFILE)" \
 		--disable-extensions-except="$(EXTENSION_DIR)" \
 		--load-extension="$(EXTENSION_DIR)" \
 		--no-first-run \
 		--no-default-browser-check
+
+chrome-clean:
+	rm -rf "$(CHROME_PROFILE)"
 
 firefox: build-firefox
 	npx web-ext run --source-dir dist/firefox-mv2
