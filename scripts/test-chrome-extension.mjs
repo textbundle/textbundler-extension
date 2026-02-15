@@ -6,8 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.resolve(__dirname, '..', 'dist', 'chrome-mv3');
 
-const executablePath = process.argv[2]
-  || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const executablePath = process.argv[2] || puppeteer.executablePath();
 
 console.log('Extension:', extensionPath);
 console.log('Browser:', executablePath);

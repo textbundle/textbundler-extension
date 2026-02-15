@@ -16,6 +16,9 @@ stats-*.json
 .chrome-profile
 web-ext.config.ts
 
+# Tier 2 test fixtures (downloaded, not checked in)
+tests/sites/**/*.html
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
