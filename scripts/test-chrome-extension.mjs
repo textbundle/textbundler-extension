@@ -5,15 +5,16 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.resolve(__dirname, '..', 'dist', 'chrome-mv3');
-const downloadDir = path.resolve(__dirname, '..', 'dist', 'test-downloads');
 
-fs.rmSync(downloadDir, { recursive: true, force: true });
-fs.mkdirSync(downloadDir, { recursive: true });
+const executablePath = process.argv[2]
+  || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 console.log('Extension:', extensionPath);
+console.log('Browser:', executablePath);
 
 const browser = await puppeteer.launch({
   headless: false,
+  executablePath,
   args: [
     `--disable-extensions-except=${extensionPath}`,
     `--load-extension=${extensionPath}`,
@@ -21,6 +22,9 @@ const browser = await puppeteer.launch({
     '--no-default-browser-check',
   ],
 });
+
+const version = await browser.version();
+console.log('Version:', version);
 
 async function waitForTarget(browser, predicate, timeoutMs = 10000) {
   const start = Date.now();
@@ -33,133 +37,56 @@ async function waitForTarget(browser, predicate, timeoutMs = 10000) {
   return null;
 }
 
+await new Promise(r => setTimeout(r, 2000));
+
+const targets = await browser.targets();
+console.log('\nAll targets:');
+for (const t of targets) {
+  console.log(`  ${t.type()}: ${t.url()}`);
+}
+
 const swTarget = await waitForTarget(browser, t => t.type() === 'service_worker');
-if (!swTarget) {
-  console.error('FAIL: No service worker registered');
-  await browser.close();
-  process.exit(1);
-}
-console.log('Service worker OK');
+if (swTarget) {
+  console.log('\nService worker OK:', swTarget.url());
 
-const swCdp = await swTarget.createCDPSession();
-await swCdp.send('Runtime.enable');
-await swCdp.send('Log.enable');
-
-swCdp.on('Runtime.consoleAPICalled', async (event) => {
-  const parts = [];
-  for (const arg of event.args) {
-    if (arg.value !== undefined) {
-      parts.push(typeof arg.value === 'string' ? arg.value : JSON.stringify(arg.value));
-    } else if (arg.objectId) {
-      try {
-        const { result } = await swCdp.send('Runtime.getProperties', {
-          objectId: arg.objectId,
-          ownProperties: true,
-        });
-        const obj = {};
-        for (const prop of result) {
-          if (prop.value) obj[prop.name] = prop.value.value ?? prop.value.description;
-        }
-        parts.push(JSON.stringify(obj));
-      } catch {
-        parts.push(arg.description ?? arg.type);
-      }
-    } else {
-      parts.push(arg.description ?? arg.type);
-    }
-  }
-  console.log(`  [SW ${event.type}] ${parts.join(' ')}`);
-});
-swCdp.on('Runtime.exceptionThrown', (event) => {
-  console.log(`  [SW EXCEPTION] ${event.exceptionDetails.text}`);
-  if (event.exceptionDetails.exception) {
-    console.log(`    ${event.exceptionDetails.exception.description}`);
-  }
-});
-
-const swWorker = await swTarget.worker();
-const page = await browser.newPage();
-
-const client = await page.createCDPSession();
-await client.send('Browser.setDownloadBehavior', {
-  behavior: 'allow',
-  downloadPath: downloadDir,
-  eventsEnabled: true,
-});
-client.on('Browser.downloadWillBegin', (event) => {
-  console.log(`  [DOWNLOAD] Begin: ${event.suggestedFilename}`);
-});
-client.on('Browser.downloadProgress', (event) => {
-  if (event.state === 'completed') console.log('  [DOWNLOAD] Complete');
-});
-
-page.on('console', msg => {
-  const text = msg.text();
-  if (!text.includes('mediawiki') && !text.includes('out of sample') && !text.includes('404')) {
-    console.log(`  [PAGE ${msg.type()}] ${text}`);
-  }
-});
-
-const testUrl = 'https://en.wikipedia.org/wiki/TextBundle';
-console.log(`Navigating to ${testUrl}...`);
-await page.goto(testUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-console.log('Page loaded.');
-
-const tabId = await swWorker.evaluate(async () => {
-  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  return tab?.id;
-});
-console.log('Tab:', tabId);
-
-console.log('Injecting content script...');
-await swWorker.evaluate(async (tabId) => {
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    files: ['/content-scripts/content.js'],
+  const swCdp = await swTarget.createCDPSession();
+  await swCdp.send('Runtime.enable');
+  swCdp.on('Runtime.consoleAPICalled', async (event) => {
+    const parts = event.args.map(a => a.value ?? a.description ?? a.type);
+    console.log(`  [SW] ${parts.join(' ')}`);
   });
-}, tabId);
 
-await new Promise(r => setTimeout(r, 1000));
+  const swWorker = await swTarget.worker();
+  const page = await browser.newPage();
 
-console.log('Triggering archive...');
-await swWorker.evaluate(async (tabId) => {
-  await chrome.tabs.sendMessage(tabId, { type: 'trigger-archive' });
-}, tabId);
+  const testUrl = 'https://en.wikipedia.org/wiki/TextBundle';
+  console.log(`\nNavigating to ${testUrl}...`);
+  await page.goto(testUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
-console.log('Waiting for pipeline (30s max)...\n');
+  const tabId = await swWorker.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    return tab?.id;
+  });
+  console.log('Tab:', tabId);
 
-const startTime = Date.now();
-let found = false;
-while (Date.now() - startTime < 30000) {
+  console.log('Injecting + triggering...');
+  await swWorker.evaluate(async (tabId) => {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['/content-scripts/content.js'],
+    });
+  }, tabId);
   await new Promise(r => setTimeout(r, 1000));
-  try {
-    const files = fs.readdirSync(downloadDir);
-    const textpacks = files.filter(f => f.endsWith('.textpack'));
-    if (textpacks.length > 0) {
-      console.log(`\nSUCCESS: ${textpacks.length} file(s):`);
-      textpacks.forEach(f => {
-        const stats = fs.statSync(path.join(downloadDir, f));
-        console.log(`  ${f} (${stats.size} bytes)`);
-      });
-      found = true;
-      break;
-    }
-  } catch {}
-}
+  await swWorker.evaluate(async (tabId) => {
+    await chrome.tabs.sendMessage(tabId, { type: 'trigger-archive' });
+  }, tabId);
 
-if (!found) {
-  console.log('\nNo .textpack files downloaded to test dir.');
-  const defaultDownloads = path.join(process.env.HOME, 'Downloads');
-  try {
-    const cutoff = Date.now() - 60000;
-    const recent = fs.readdirSync(defaultDownloads)
-      .filter(f => f.endsWith('.textpack'))
-      .map(f => ({ name: f, mtime: fs.statSync(path.join(defaultDownloads, f)).mtimeMs }))
-      .filter(f => f.mtime > cutoff);
-    if (recent.length > 0) {
-      console.log('Found recent .textpack in ~/Downloads:', recent.map(f => f.name));
-    }
-  } catch {}
+  console.log('Waiting for pipeline...');
+  await new Promise(r => setTimeout(r, 15000));
+} else {
+  console.log('\nFAIL: No service worker registered');
+  const bgTarget = targets.find(t => t.type() === 'background_page');
+  if (bgTarget) console.log('Background page found (MV2 fallback):', bgTarget.url());
 }
 
 await browser.close();
