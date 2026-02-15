@@ -1,6 +1,6 @@
 # TextBundler
 
-A cross-browser extension (Firefox + Chrome) that captures web pages as self-contained Markdown archives in the [TextBundle](https://textbundle.org/) `.textpack` format. Built with [WXT](https://wxt.dev/) (Manifest V3/V2), TypeScript, and Vite.
+A cross-browser extension (Firefox + Chrome + Safari) that captures web pages as self-contained Markdown archives in the [TextBundle](https://textbundle.org/) `.textpack` format. Built with [WXT](https://wxt.dev/) (Manifest V3/V2), TypeScript, and Vite.
 
 ## Quick Start
 
@@ -35,12 +35,14 @@ This installs dependencies and runs `wxt prepare` to generate TypeScript types.
 ```bash
 make chrome        # build Chrome MV3 + launch with extension loaded
 make firefox       # build Firefox MV2 + launch via web-ext
-make build-all     # build both browsers
+make safari        # build Safari MV2 + open Safari (manual load)
+make safari-xcode  # build + generate Xcode project for App Store
+make build-all     # build all three browsers
 make test          # Vitest
 make typecheck     # tsc --noEmit
 make lint          # ESLint
 make e2e           # Puppeteer end-to-end pipeline test
-make clean         # remove dist/ and .wxt/
+make clean         # remove dist/, .wxt/, and xcode-safari/
 make chrome-clean  # wipe the Chrome test profile
 ```
 
@@ -72,20 +74,32 @@ To debug: click "Inspect" next to the extension on the `about:debugging` page to
 
 To debug: click "Inspect views: service worker" on the extension card to open the background script console.
 
+**Safari:**
+1. Safari > Settings > Advanced > enable "Show features for web developers"
+2. Develop menu > check "Web Extension Developer Mode"
+3. Develop > Load Web Extension... > select `dist/safari-mv2/`
+4. The extension appears in the toolbar
+
+To debug: Develop > Web Extension Background Content > TextBundler to open the background script console.
+
+`make safari` builds and opens Safari with instructions. `make safari-xcode` generates a full Xcode project for App Store distribution.
+
 ### Reloading after changes
 
-After rebuilding (`npm run build` / `npm run build:firefox`):
+After rebuilding (`npm run build` / `npm run build:firefox` / `npm run build:safari`):
 
 - **Firefox:** Click the reload icon (circular arrow) next to the extension on `about:debugging`
 - **Chrome:** Click the reload icon on the extension card at `chrome://extensions`
+- **Safari:** Develop > Load Web Extension... again (replaces the previous load)
 
-Dev mode (`npm run dev` / `npm run dev:firefox`) watches for changes and auto-reloads. `make chrome` / `make firefox` always rebuild before launching.
+Dev mode (`npm run dev` / `npm run dev:firefox`) watches for changes and auto-reloads. `make chrome` / `make firefox` / `make safari` always rebuild before launching.
 
 ## Production Build
 
 ```bash
 npm run build            # Chrome MV3 → dist/chrome-mv3/
 npm run build:firefox    # Firefox MV2 → dist/firefox-mv2/
+npm run build:safari     # Safari MV2 → dist/safari-mv2/
 ```
 
 ## Package for Distribution
@@ -93,6 +107,8 @@ npm run build:firefox    # Firefox MV2 → dist/firefox-mv2/
 ```bash
 npm run zip              # → dist/textbundler-0.1.0-chrome.zip
 npm run zip:firefox      # → dist/textbundler-0.1.0-firefox.zip + sources.zip
+npm run zip:safari       # → dist/textbundler-0.1.0-safari.zip
+make safari-xcode        # generate Xcode project for App Store submission
 ```
 
 ## Quality Checks

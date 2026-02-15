@@ -14,6 +14,7 @@ stats.html
 stats-*.json
 .wxt
 .chrome-profile
+xcode-safari
 web-ext.config.ts
 
 # Tier 2 test fixtures (downloaded, not checked in)
