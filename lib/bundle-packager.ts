@@ -46,8 +46,8 @@ export async function packageBundle(
   }
 
   const arrayBuffer = await zip.generateAsync({ type: 'arraybuffer' });
-  const blob = new Blob([arrayBuffer], { type: 'application/zip' });
-  const filename = generateFilename(title, date);
+  const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+  const filename = generateFilename(title, date, sourceUrl);
 
   return { blob, filename };
 }

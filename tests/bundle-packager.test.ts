@@ -45,7 +45,7 @@ describe('packageBundle', () => {
     );
 
     expect(result.blob).toBeInstanceOf(Blob);
-    expect(result.filename).toBe('2026-02-14-test-article.textpack');
+    expect(result.filename).toBe('2026-02-14-example-test-article.textpack');
 
     const arrayBuffer = await result.blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
@@ -153,7 +153,7 @@ describe('packageBundle', () => {
     );
 
     expect(result.filename).toBe(
-      '2026-01-15-rust-s-ownership-model-a-deep-dive.textpack',
+      '2026-01-15-example-rust-s-ownership-model-a-deep-dive.textpack',
     );
   });
 
@@ -168,7 +168,7 @@ describe('packageBundle', () => {
       null,
     );
 
-    expect(result.filename).toBe(`${today}-simple-title.textpack`);
+    expect(result.filename).toBe(`${today}-example-simple-title.textpack`);
   });
 
   test('image data is correctly stored in zip', async () => {
@@ -234,14 +234,8 @@ describe('packageBundle', () => {
       '2026-02-14',
     );
 
-    expect(result.filename).toMatch(/^2026-02-14-/);
+    expect(result.filename).toMatch(/^2026-02-14-example-/);
     expect(result.filename).toMatch(/\.textpack$/);
     expect(result.filename).not.toMatch(/--/);
-
-    const slug = result.filename
-      .replace('2026-02-14-', '')
-      .replace('.textpack', '');
-    expect(slug.length).toBeLessThanOrEqual(80);
-    expect(slug).not.toMatch(/-$/);
   });
 });

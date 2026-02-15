@@ -23,21 +23,48 @@ export function slugify(title: string, fallback?: string): string {
 }
 
 /**
- * Generate a complete TextBundle filename with date prefix.
+ * Extract a short domain label from a URL, stripping www. and the TLD.
+ * e.g. "https://www.example.co.uk/path" → "example"
+ *      "https://en.wikipedia.org/wiki/X" → "en-wikipedia"
+ *
+ * @param url - Source page URL
+ * @returns Slugified domain label, or empty string on failure
+ */
+export function extractDomain(url: string): string {
+  try {
+    let host = new URL(url).hostname;
+    host = host.replace(/^www\./, '');
+    const parts = host.split('.');
+    if (parts.length > 2) {
+      parts.pop();
+      return parts.join('-');
+    }
+    return parts[0] ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Generate a complete TextBundle filename with date prefix and domain.
  * Section 4.7
  * FR-005
  *
  * @param title - Article title to generate slug from
  * @param date - ISO date string (YYYY-MM-DD) or null to use today's date
+ * @param sourceUrl - Source page URL for domain extraction
  * @param fallback - Optional fallback slug if title produces empty slug
- * @returns Filename in format {YYYY-MM-DD}-{slug}.textpack
+ * @returns Filename in format {YYYY-MM-DD}-{domain}-{slug}.textpack
  */
 export function generateFilename(
   title: string,
   date: string | null,
+  sourceUrl?: string,
   fallback?: string,
 ): string {
   const datePrefix = (date || new Date().toISOString()).split('T')[0];
+  const domain = sourceUrl ? extractDomain(sourceUrl) : '';
   const slug = slugify(title, fallback);
-  return `${datePrefix}-${slug}.textpack`;
+  const middle = [domain, slug].filter(Boolean).join('-');
+  return `${datePrefix}-${middle}.textpack`;
 }

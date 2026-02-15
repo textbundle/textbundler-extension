@@ -101,7 +101,7 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     );
 
     expect(blob).toBeInstanceOf(Blob);
-    expect(filename).toBe('2026-02-14-the-complete-guide-to-web-archiving.textpack');
+    expect(filename).toBe('2026-02-14-example-the-complete-guide-to-web-archiving.textpack');
 
     const arrayBuffer = await blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
