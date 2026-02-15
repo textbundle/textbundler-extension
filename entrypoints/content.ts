@@ -1,5 +1,6 @@
 import { extractArticle } from '@/lib/readability-runner';
 import { extractMetadata } from '@/lib/metadata-extractor';
+import { convertToMarkdown } from '@/lib/markdown-converter';
 import { logger } from '@/lib/logger';
 import type { ExtractionResult, ExtractionFailure } from '@/lib/types';
 
@@ -20,15 +21,20 @@ export default defineContentScript({
       const elapsed = Date.now() - start;
 
       if (article) {
+        const { markdown, imageMap } = convertToMarkdown(article.content);
+
         logger.info('content-script', 'Extraction succeeded', {
           title: article.title,
           contentLength: article.content.length,
+          images: Object.keys(imageMap).length,
           elapsed,
         });
 
         const result: ExtractionResult = {
           type: 'archive-page',
           article,
+          markdown,
+          imageMap,
           metadata,
           sourceUrl: url,
         };

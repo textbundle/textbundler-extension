@@ -12,6 +12,8 @@ export interface ArticleResult {
 export interface ExtractionResult {
   type: 'archive-page';
   article: ArticleResult;
+  markdown: string;
+  imageMap: ImageMap;
   metadata: PageMetadata;
   sourceUrl: string;
 }

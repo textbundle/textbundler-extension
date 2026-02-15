@@ -1,5 +1,4 @@
 import { logger } from '@/lib/logger';
-import { convertToMarkdown } from '@/lib/markdown-converter';
 import { downloadImages } from '@/lib/image-downloader';
 import { patchFailedImageUrls } from '@/lib/image-patcher';
 import { buildFrontmatter } from '@/lib/frontmatter-builder';
@@ -11,7 +10,7 @@ export default defineBackground(() => {
   logger.info('background', 'Service worker started');
 
   const action = browser.action ?? browser.browserAction;
-  const menus = browser.contextMenus ?? browser.menus;
+  const menus = browser.contextMenus ?? (browser as any).menus;
 
   const processingTabs = new Set<number>();
 
@@ -75,8 +74,8 @@ export default defineBackground(() => {
 
     try {
       let stageStart = Date.now();
-      const { markdown, imageMap } = convertToMarkdown(extraction.article.content);
-      logger.debug('background', 'convertToMarkdown complete', { elapsed: Date.now() - stageStart });
+      const { markdown, imageMap } = extraction;
+      logger.debug('background', 'Using pre-converted markdown', { markdownLength: markdown.length, images: Object.keys(imageMap).length });
 
       stageStart = Date.now();
       const assets = await downloadImages(imageMap);
