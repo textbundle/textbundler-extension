@@ -26,6 +26,11 @@ export default defineConfig({
     description:
       'Capture web pages as self-contained Markdown archives in TextBundle .textpack format',
     permissions: ['activeTab', 'contextMenus', 'downloads', 'notifications', 'scripting', 'storage'],
+    browser_specific_settings: {
+      gecko: {
+        id: 'textbundler@textbundle.org',
+      },
+    },
     action: {
       default_icon: {
         16: 'icon/16.png',
