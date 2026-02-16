@@ -209,38 +209,45 @@ describe('convertToMarkdown', () => {
     );
   });
 
-  describe('tables (HTML preservation)', () => {
-    it('preserves simple table as inline HTML', () => {
-      const html =
-        '<table><tr><td>Cell</td></tr></table>';
-      const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('<table>');
-      expect(markdown).toContain('</table>');
-    });
-
-    it('preserves table with thead/tbody as inline HTML', () => {
-      const html =
-        '<table><thead><tr><th>Header</th></tr></thead><tbody><tr><td>Data</td></tr></tbody></table>';
-      const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('<thead>');
-      expect(markdown).toContain('<tbody>');
-      expect(markdown).toContain('<th>');
-      expect(markdown).toContain('<td>');
-    });
-
-    it('preserves colspan and rowspan attributes', () => {
-      const html =
-        '<table><tr><td colspan="2">Wide</td></tr><tr><td rowspan="2">Tall</td><td>Cell</td></tr></table>';
-      const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('colspan="2"');
-      expect(markdown).toContain('rowspan="2"');
-    });
-
-    it('does not convert tables to GFM markdown table syntax', () => {
+  describe('tables (default: markdown/GFM)', () => {
+    it('converts simple table to GFM pipe table', () => {
       const html =
         '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).not.toMatch(/\|.*\|/);
+      expect(markdown).toMatch(/\|.*A.*\|.*B.*\|/);
+      expect(markdown).toMatch(/\|.*---.*\|.*---.*\|/);
+      expect(markdown).toMatch(/\|.*1.*\|.*2.*\|/);
+    });
+
+    it('preserves table without thead as HTML (GFM requires header row)', () => {
+      const html =
+        '<table><tr><td>Cell</td><td>Cell2</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+    });
+
+    it('preserves complex table with colspan as inline HTML', () => {
+      const html =
+        '<table><tr><td colspan="2">Wide</td></tr><tr><td>A</td><td>B</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+      expect(markdown).toContain('colspan="2"');
+      expect(markdown).toContain('</table>');
+    });
+
+    it('preserves complex table with rowspan as inline HTML', () => {
+      const html =
+        '<table><tr><td rowspan="2">Tall</td><td>A</td></tr><tr><td>B</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+      expect(markdown).toContain('rowspan="2"');
+    });
+
+    it('preserves table with nested table as inline HTML', () => {
+      const html =
+        '<table><tr><td><table><tr><td>Nested</td></tr></table></td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
     });
 
     it(
@@ -260,6 +267,95 @@ describe('convertToMarkdown', () => {
       },
       10_000,
     );
+  });
+
+  describe('tables (figureStyle: html, tableStyle: html)', () => {
+    it('preserves simple table as inline HTML', () => {
+      const html =
+        '<table><tr><td>Cell</td></tr></table>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'markdown', tableStyle: 'html' });
+      expect(markdown).toContain('<table>');
+      expect(markdown).toContain('</table>');
+    });
+
+    it('preserves table with thead/tbody as inline HTML', () => {
+      const html =
+        '<table><thead><tr><th>Header</th></tr></thead><tbody><tr><td>Data</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'markdown', tableStyle: 'html' });
+      expect(markdown).toContain('<thead>');
+      expect(markdown).toContain('<tbody>');
+      expect(markdown).toContain('<th>');
+      expect(markdown).toContain('<td>');
+    });
+
+    it('preserves colspan and rowspan attributes', () => {
+      const html =
+        '<table><tr><td colspan="2">Wide</td></tr><tr><td rowspan="2">Tall</td><td>Cell</td></tr></table>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'markdown', tableStyle: 'html' });
+      expect(markdown).toContain('colspan="2"');
+      expect(markdown).toContain('rowspan="2"');
+    });
+
+    it('does not convert tables to GFM markdown table syntax', () => {
+      const html =
+        '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'markdown', tableStyle: 'html' });
+      expect(markdown).not.toMatch(/\|\s*---/);
+    });
+  });
+
+  describe('complex table auto-detection', () => {
+    it('detects td with colspan > 1 as complex', () => {
+      const html =
+        '<table><tr><td colspan="2">Wide</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+    });
+
+    it('detects th with colspan > 1 in thead as complex', () => {
+      const html =
+        '<table><thead><tr><th colspan="3">Header</th></tr></thead><tbody><tr><td>A</td><td>B</td><td>C</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+    });
+
+    it('detects td with rowspan > 1 as complex', () => {
+      const html =
+        '<table><tr><td rowspan="3">Tall</td><td>A</td></tr><tr><td>B</td></tr><tr><td>C</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+    });
+
+    it('detects th with rowspan > 1 as complex', () => {
+      const html =
+        '<table><thead><tr><th rowspan="2">Header</th><th>H2</th></tr><tr><th>H3</th></tr></thead><tbody><tr><td>A</td><td>B</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+    });
+
+    it('detects nested table as complex', () => {
+      const html =
+        '<table><tr><td><table><tr><td>Inner</td></tr></table></td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+    });
+
+    it('converts simple table with thead/tbody to GFM', () => {
+      const html =
+        '<table><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody><tr><td>Foo</td><td>Bar</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toMatch(/\|.*Name.*\|.*Value.*\|/);
+      expect(markdown).toMatch(/\|.*---.*\|.*---.*\|/);
+      expect(markdown).toMatch(/\|.*Foo.*\|.*Bar.*\|/);
+      expect(markdown).not.toContain('<table>');
+    });
+
+    it('preserves simple table without thead as HTML (GFM requires header row)', () => {
+      const html =
+        '<table><tr><td>A</td><td>B</td></tr><tr><td>C</td><td>D</td></tr></table>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('<table>');
+    });
   });
 
   describe('details/summary (HTML preservation)', () => {
@@ -384,40 +480,37 @@ describe('convertToMarkdown', () => {
     );
   });
 
-  describe('figures (inline HTML with image rewriting)', () => {
-    it('converts figure with img and figcaption to inline HTML', () => {
+  describe('figures (default: markdown)', () => {
+    it('converts figure with img and figcaption to markdown image + italic caption', () => {
       const html =
         '<figure><img src="https://example.com/photo.jpg" alt="A photo"><figcaption>Caption text</figcaption></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('<figure>');
-      expect(markdown).toContain('</figure>');
-      expect(markdown).toContain('<figcaption>');
-      expect(markdown).toContain('alt="A photo"');
+      expect(markdown).toContain('![A photo](assets/image-001.jpg)');
+      expect(markdown).toContain('*Caption text*');
     });
 
     it('rewrites img src inside figure to assets/ path', () => {
       const html =
         '<figure><img src="https://example.com/photo.jpg" alt="A photo"><figcaption>Caption</figcaption></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('src="assets/image-001.jpg"');
+      expect(markdown).toContain('![A photo](assets/image-001.jpg)');
       expect(markdown).not.toContain('src="https://example.com/photo.jpg"');
     });
 
-    it('converts figure without figcaption', () => {
+    it('converts figure without figcaption to markdown image only', () => {
       const html =
         '<figure><img src="https://example.com/photo.png" alt="No caption"></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('<figure>');
-      expect(markdown).toContain('src="assets/image-001.png"');
-      expect(markdown).toContain('</figure>');
+      expect(markdown).toContain('![No caption](assets/image-001.png)');
+      expect(markdown).not.toContain('*');
     });
 
-    it('preserves linked image inside figure', () => {
+    it('converts linked image inside figure to markdown image', () => {
       const html =
         '<figure><a href="https://example.com/gallery"><img src="https://example.com/photo.webp" alt="Linked"></a><figcaption>Click</figcaption></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('<a href="https://example.com/gallery">');
-      expect(markdown).toContain('src="assets/image-001.webp"');
+      expect(markdown).toContain('![Linked](assets/image-001.webp)');
+      expect(markdown).toContain('*Click*');
     });
 
     it('populates imageMap for figure images', () => {
@@ -456,6 +549,52 @@ describe('convertToMarkdown', () => {
       },
       10_000,
     );
+  });
+
+  describe('figures (figureStyle: html)', () => {
+    it('preserves figure with img and figcaption as inline HTML', () => {
+      const html =
+        '<figure><img src="https://example.com/photo.jpg" alt="A photo"><figcaption>Caption text</figcaption></figure>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('<figure>');
+      expect(markdown).toContain('</figure>');
+      expect(markdown).toContain('<figcaption>');
+      expect(markdown).toContain('alt="A photo"');
+    });
+
+    it('rewrites img src inside figure to assets/ path in HTML mode', () => {
+      const html =
+        '<figure><img src="https://example.com/photo.jpg" alt="A photo"><figcaption>Caption</figcaption></figure>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('src="assets/image-001.jpg"');
+      expect(markdown).not.toContain('src="https://example.com/photo.jpg"');
+    });
+
+    it('preserves figure without figcaption as HTML', () => {
+      const html =
+        '<figure><img src="https://example.com/photo.png" alt="No caption"></figure>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('<figure>');
+      expect(markdown).toContain('src="assets/image-001.png"');
+      expect(markdown).toContain('</figure>');
+    });
+
+    it('preserves linked image inside figure as HTML', () => {
+      const html =
+        '<figure><a href="https://example.com/gallery"><img src="https://example.com/photo.webp" alt="Linked"></a><figcaption>Click</figcaption></figure>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('<a href="https://example.com/gallery">');
+      expect(markdown).toContain('src="assets/image-001.webp"');
+    });
+
+    it('populates imageMap for figure images in HTML mode', () => {
+      const html =
+        '<figure><img src="https://example.com/photo.jpg" alt="Test"></figure>';
+      const { imageMap } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(imageMap['https://example.com/photo.jpg']).toBe(
+        'assets/image-001.jpg',
+      );
+    });
   });
 
   describe('image source rewriting (standalone images)', () => {
@@ -548,13 +687,13 @@ describe('convertToMarkdown', () => {
   describe('shared image counter (figures + standalone)', () => {
     it('shares counter between figure images and standalone images', () => {
       const html =
-        '<figure><img src="https://example.com/fig.jpg" alt="Figure"></figure>' +
-        '<p><img src="https://example.com/standalone.jpg" alt="Standalone"></p>';
+        '<p><img src="https://example.com/standalone.jpg" alt="Standalone"></p>' +
+        '<figure><img src="https://example.com/fig.jpg" alt="Figure"></figure>';
       const { imageMap } = convertToMarkdown(html);
-      expect(imageMap['https://example.com/fig.jpg']).toBe(
+      expect(imageMap['https://example.com/standalone.jpg']).toBe(
         'assets/image-001.jpg',
       );
-      expect(imageMap['https://example.com/standalone.jpg']).toBe(
+      expect(imageMap['https://example.com/fig.jpg']).toBe(
         'assets/image-002.jpg',
       );
     });
@@ -575,4 +714,27 @@ describe('convertToMarkdown', () => {
     });
   });
 
+  describe('settings parameter', () => {
+    it('uses default settings when called without settings', () => {
+      const html = '<figure><img src="https://example.com/photo.jpg" alt="A"><figcaption>Cap</figcaption></figure>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).toContain('![A](assets/image-001.jpg)');
+      expect(markdown).toContain('*Cap*');
+    });
+
+    it('accepts explicit settings', () => {
+      const html = '<figure><img src="https://example.com/photo.jpg" alt="A"><figcaption>Cap</figcaption></figure>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('<figure>');
+    });
+
+    it('supports mixed settings (figures html, tables markdown)', () => {
+      const html =
+        '<figure><img src="https://example.com/photo.jpg" alt="A"><figcaption>Cap</figcaption></figure>' +
+        '<table><thead><tr><th>X</th></tr></thead><tbody><tr><td>Y</td></tr></tbody></table>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('<figure>');
+      expect(markdown).toMatch(/\|.*X.*\|/);
+    });
+  });
 });
