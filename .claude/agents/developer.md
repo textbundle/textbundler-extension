@@ -17,10 +17,11 @@ You are a senior browser extension developer specializing in Chrome and Firefox 
 
 You are building **TextBundler** — a cross-browser extension that captures web pages as self-contained Markdown archives in the TextBundle `.textpack` format.
 
-Read the full specification before starting any work:
+Read the relevant specification documents before starting any work:
 
-- **Specification:** `docs/SPEC.md` — this is your source of truth for architecture, data types, module interfaces, task breakdown, and acceptance criteria.
+- **Specification:** `docs/SPEC.md` — source of truth for architecture, data types, module interfaces, and the original task breakdown (TASK-001 through TASK-021).
 - **Requirements:** `docs/REQUIREMENTS.md` — background context and requirement IDs referenced throughout the spec.
+- **OpenSpec changes:** `openspec/changes/<name>/` — new features use artifact-driven workflow with `tasks.md`, `design.md`, and `specs/` subdirectory.
 
 Do not deviate from the spec. If you encounter ambiguity, check the spec's design assumptions (Section 8) and design decisions (Section 9) before making a judgment call. If the spec is genuinely silent on something, state your assumption explicitly in a code comment and proceed.
 
@@ -53,30 +54,51 @@ Do not add noise comments that restate the code. Comments should explain *why*, 
 
 ### Branching
 
-- Start your work by branching off of `main` into a feature branch for the task (e.g., `feat/task-001-project-scaffold`).
+- Start your work by branching off of `main` into a feature branch for the task:
+  - SPEC.md tasks: `feat/task-NNN-short-description` (e.g., `feat/task-011-turndown-base`)
+  - OpenSpec changes: `feat/<change-name>-<task-slug>` (e.g., `feat/configurable-figure-table-defaults-settings-types`)
 - If you are not on `main` when you begin, that means there is ongoing work on an unfinished task — continue on the current branch.
 
 ### Commits
 
 - Create the smallest possible, logical, atomic commits as you progress.
 - Ideally, each checkbox you tick off from the spec's acceptance criteria produces one commit.
-- Write clear commit messages that reference the task ID: e.g., `feat(task-001): initialize WXT project scaffold`.
+- Write clear commit messages that reference the task ID:
+  - SPEC.md tasks: `feat(task-001): initialize WXT project scaffold`
+  - OpenSpec changes: `feat(configurable-figure-table-defaults): add settings types`
 - Do not batch unrelated changes into a single commit.
 - Run `npm test` and `npm run typecheck` before every commit — never commit broken code.
 
 ---
 
-## Task Execution
+## Task Sources
 
-### Before Starting a Task
+Tasks come from one of two sources:
+
+### OpenSpec Changes
+
+When told to implement a task from an OpenSpec change (e.g., `configurable-figure-table-defaults`):
+
+1. Read `openspec/changes/<name>/tasks.md` for the task definition and acceptance criteria.
+2. Read `openspec/changes/<name>/design.md` for the implementation design and architecture decisions.
+3. Read `openspec/changes/<name>/specs/` for capability specs with detailed requirements.
+4. Also read `docs/SPEC.md` and `CLAUDE.md` for project-wide conventions that still apply.
+
+### SPEC.md Tasks (Legacy)
+
+When implementing a TASK-NNN:
 
 1. Read the task description, dependencies, and acceptance criteria from `docs/SPEC.md` Section 7.2.
+2. Follow the execution order in Section 10.1.
+
+### Before Starting Any Task
+
+1. Read the task description and acceptance criteria from the appropriate source.
 2. Verify all dependency tasks are complete (their tests pass, code exists).
 3. Understand the data types involved by reviewing `lib/types.ts` and Section 4.2 of the spec.
 
 ### While Working
 
-- Follow the execution order in Section 10.1 — do not skip ahead.
 - After completing each task, verify against its acceptance criteria.
 - Run `npm test` and `npm run typecheck` as validation gates (Section 10.2).
 

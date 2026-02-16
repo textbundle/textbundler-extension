@@ -1,6 +1,6 @@
 # Code Review: {branch-name}
 
-**Task:** TASK-{NNN}: {Task Name}
+**Task:** {Task ID}: {Task Name}
 **Reviewer:** Code Reviewer Agent
 **Date:** {YYYY-MM-DD}
 **Verdict:** {APPROVE | REQUEST CHANGES | REJECT}
