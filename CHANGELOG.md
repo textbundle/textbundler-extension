@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-16
+
+### Added
+
+- Configurable figure output style (Markdown or HTML) via options page
+- Configurable table output style (Markdown or HTML) via options page
+- Options page with Figure and Table conversion settings (`entrypoints/options/`)
+- GFM pipe table output for simple tables (default); complex tables with colspan/rowspan auto-detected and preserved as HTML
+- Markdown-mode figure output: `![alt](path)` + `*caption*` (default)
+- `ConversionSettings` type and `applyDefaults()` helper (`lib/conversion-settings.ts`)
+- Settings persistence via `browser.storage.sync`
+
+### Fixed
+
+- Firefox `storage` API error with temporary add-ons — added explicit gecko addon ID (`textbundler@textbundle.org`)
+
 ## [1.1.1] - 2026-02-16
 
 ### Fixed
@@ -59,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Makefile with `make chrome`, `make firefox`, and `make e2e` targets
 - GPLv3 license
 
+[1.2.0]: https://github.com/textbundle/textbundler-extension/releases/tag/v1.2.0
 [1.1.1]: https://github.com/textbundle/textbundler-extension/releases/tag/v1.1.1
 [1.1.0]: https://github.com/textbundle/textbundler-extension/releases/tag/v1.1.0
 [1.0.0]: https://github.com/textbundle/textbundler-extension/releases/tag/v1.0.0
