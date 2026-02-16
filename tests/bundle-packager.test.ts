@@ -50,12 +50,13 @@ describe('packageBundle', () => {
     const arrayBuffer = await result.blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
     const files = Object.keys(zip.files);
+    const dir = '2026-02-14-example-test-article.textbundle';
 
-    expect(files).toContain('info.json');
-    expect(files).toContain('text.md');
-    expect(files).toContain('assets/image-001.jpg');
-    expect(files).toContain('assets/image-002.png');
-    expect(files).not.toContain('assets/image-003.gif');
+    expect(files).toContain(`${dir}/info.json`);
+    expect(files).toContain(`${dir}/text.md`);
+    expect(files).toContain(`${dir}/assets/image-001.jpg`);
+    expect(files).toContain(`${dir}/assets/image-002.png`);
+    expect(files).not.toContain(`${dir}/assets/image-003.gif`);
   });
 
   test('info.json contains correct TextBundle v2 metadata', async () => {
@@ -70,7 +71,8 @@ describe('packageBundle', () => {
 
     const arrayBuffer = await result.blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
-    const infoJsonContent = await zip.file('info.json')!.async('string');
+    const dir = '2026-02-14-example-test-article.textbundle';
+    const infoJsonContent = await zip.file(`${dir}/info.json`)!.async('string');
     const infoJson = JSON.parse(infoJsonContent);
 
     expect(infoJson).toEqual({
@@ -98,7 +100,8 @@ describe('packageBundle', () => {
 
     const arrayBuffer = await result.blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
-    const textMdContent = await zip.file('text.md')!.async('string');
+    const dir = '2026-02-14-example-test-article.textbundle';
+    const textMdContent = await zip.file(`${dir}/text.md`)!.async('string');
 
     expect(textMdContent).toBe(
       '---\ntitle: Test Article\nauthor: John Doe\n---\n# Test Article\n\nThis is the content.',
@@ -136,10 +139,11 @@ describe('packageBundle', () => {
 
     const arrayBuffer = await result.blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
+    const dir = '2026-02-14-example-test-article.textbundle';
 
-    expect(zip.file('assets/image-001.jpg')).not.toBeNull();
-    expect(zip.file('assets/image-002.png')).not.toBeNull();
-    expect(zip.file('assets/image-003.gif')).toBeNull();
+    expect(zip.file(`${dir}/assets/image-001.jpg`)).not.toBeNull();
+    expect(zip.file(`${dir}/assets/image-002.png`)).not.toBeNull();
+    expect(zip.file(`${dir}/assets/image-003.gif`)).toBeNull();
   });
 
   test('output filename matches {YYYY-MM-DD}-{slug}.textpack pattern', async () => {
@@ -194,8 +198,9 @@ describe('packageBundle', () => {
 
     const arrayBuffer = await result.blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
+    const dir = '2026-02-14-example-test-article.textbundle';
     const imageData = await zip
-      .file('assets/image-001.jpg')!
+      .file(`${dir}/assets/image-001.jpg`)!
       .async('arraybuffer');
     const retrievedData = new Uint8Array(imageData);
 
@@ -215,10 +220,11 @@ describe('packageBundle', () => {
     const arrayBuffer = await result.blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
     const files = Object.keys(zip.files);
+    const dir = '2026-02-14-example-test-article.textbundle';
 
-    expect(files).toContain('info.json');
-    expect(files).toContain('text.md');
-    expect(files.filter((f) => f.startsWith('assets/'))).toHaveLength(0);
+    expect(files).toContain(`${dir}/info.json`);
+    expect(files).toContain(`${dir}/text.md`);
+    expect(files.filter((f) => f.includes('assets/'))).toHaveLength(0);
   });
 
   test('handles very long title with slug truncation', async () => {

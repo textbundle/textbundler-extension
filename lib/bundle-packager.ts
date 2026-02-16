@@ -24,6 +24,8 @@ export async function packageBundle(
   date: string | null,
 ): Promise<{ blob: Blob; filename: string }> {
   const zip = new JSZip();
+  const filename = generateFilename(title, date, sourceUrl);
+  const bundleDir = filename.replace(/\.textpack$/, '.textbundle');
 
   const infoJson = {
     version: 2,
@@ -34,20 +36,19 @@ export async function packageBundle(
     sourceURL: sourceUrl,
   };
 
-  zip.file('info.json', JSON.stringify(infoJson, null, 2));
+  zip.file(`${bundleDir}/info.json`, JSON.stringify(infoJson, null, 2));
 
   const textMd = `${frontmatter}\n${markdownBody}`;
-  zip.file('text.md', textMd);
+  zip.file(`${bundleDir}/text.md`, textMd);
 
   for (const asset of assets) {
     if (!asset.failed) {
-      zip.file(asset.filename, asset.data);
+      zip.file(`${bundleDir}/${asset.filename}`, asset.data);
     }
   }
 
   const arrayBuffer = await zip.generateAsync({ type: 'arraybuffer' });
   const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
-  const filename = generateFilename(title, date, sourceUrl);
 
   return { blob, filename };
 }

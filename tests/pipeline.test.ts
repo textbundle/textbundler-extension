@@ -106,13 +106,14 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     const arrayBuffer = await blob.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
     const files = Object.keys(zip.files);
+    const dir = '2026-02-14-example-the-complete-guide-to-web-archiving.textbundle';
 
-    expect(files).toContain('info.json');
-    expect(files).toContain('text.md');
-    expect(files).toContain('assets/image-001.png');
-    expect(files).not.toContain('assets/image-002.jpg');
+    expect(files).toContain(`${dir}/info.json`);
+    expect(files).toContain(`${dir}/text.md`);
+    expect(files).toContain(`${dir}/assets/image-001.png`);
+    expect(files).not.toContain(`${dir}/assets/image-002.jpg`);
 
-    const infoJsonContent = await zip.file('info.json')!.async('string');
+    const infoJsonContent = await zip.file(`${dir}/info.json`)!.async('string');
     const infoJson = JSON.parse(infoJsonContent);
     expect(infoJson).toEqual({
       version: 2,
@@ -123,7 +124,7 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
       sourceURL: sourceUrl,
     });
 
-    const textMdContent = await zip.file('text.md')!.async('string');
+    const textMdContent = await zip.file(`${dir}/text.md`)!.async('string');
     expect(textMdContent).toContain('---');
     expect(textMdContent).toContain('title: The Complete Guide to Web Archiving');
     expect(textMdContent).toContain('## Why Archive Web Content?');
@@ -132,7 +133,7 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     expect(textMdContent).not.toContain('Copyright 2025');
     expect(textMdContent).toContain('https://example.com/images/missing.jpg');
 
-    const imageData = await zip.file('assets/image-001.png')!.async('arraybuffer');
+    const imageData = await zip.file(`${dir}/assets/image-001.png`)!.async('arraybuffer');
     expect(imageData.byteLength).toBeGreaterThan(0);
   });
 
