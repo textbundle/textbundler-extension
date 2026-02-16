@@ -54,6 +54,25 @@ make firefox
 - Builds `dist/firefox-mv2/` and launches Firefox via `web-ext run`
 - Uses a temporary profile automatically (web-ext default behavior)
 
+### Safari
+
+```bash
+make safari-xcode
+```
+
+- Builds `dist/safari-mv2/` and generates an Xcode project at `xcode-safari/`
+- In Xcode: select the **"TextBundler (macOS)"** scheme, set your signing team on all targets, click Run
+- Enable the extension in Safari > Settings > Extensions
+- See [docs/SAFARI.md](SAFARI.md) for the full Safari workflow
+
+For Safari 26+ without Xcode:
+
+```bash
+make safari
+```
+
+- Builds and opens Safari — load via Develop > Load Web Extension... > `dist/safari-mv2/`
+
 ### What to Test Manually
 
 1. **Toolbar button** — click the TextBundler icon on any article page
@@ -72,7 +91,7 @@ make firefox
    assets/image-002.jpg
    ...
    ```
-6. **Non-article pages** — try on a page Readability can't extract (e.g. a search results page). Should show `!` badge and a notification.
+6. **Non-article pages** — try on a page Readability can't extract (e.g. a search results page). Should show `!` badge and a notification (Chrome/Firefox only — Safari lacks the notifications API).
 
 ### Good Test Pages
 
@@ -113,9 +132,12 @@ make chrome
 
 ### Extension shows `!` badge but no notification
 
-Open the service worker console:
-- `make chrome` → navigate to `chrome://extensions` → click "Inspect views: service worker"
-- Check for error messages prefixed with `[TextBundler:]`
+Open the background console:
+- **Chrome:** `chrome://extensions` → click "Inspect views: service worker"
+- **Firefox:** `about:debugging` → click "Inspect" next to the extension
+- **Safari:** Develop > Web Extension Background Content > TextBundler
+
+Check for error messages prefixed with `[TextBundler:]`. Note: Safari does not support browser notifications, so only the badge indicator is shown.
 
 ### Downloads save as `.zip` instead of `.textpack`
 
