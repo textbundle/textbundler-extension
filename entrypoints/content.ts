@@ -1,8 +1,9 @@
 import { extractArticle } from '@/lib/readability-runner';
 import { extractMetadata } from '@/lib/metadata-extractor';
 import { convertToMarkdown } from '@/lib/markdown-converter';
+import { applyDefaults } from '@/lib/conversion-settings';
 import { logger } from '@/lib/logger';
-import type { ExtractionResult, ExtractionFailure } from '@/lib/types';
+import type { ConversionSettings, ExtractionResult, ExtractionFailure } from '@/lib/types';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -22,43 +23,48 @@ export default defineContentScript({
 
       if (message?.type !== 'trigger-archive') return;
 
-      const start = Date.now();
-      const url = window.location.href;
+      return (async () => {
+        const start = Date.now();
+        const url = window.location.href;
 
-      const metadata = extractMetadata(document, url);
-      const article = extractArticle(document);
+        const stored = await browser.storage.sync.get('conversionSettings');
+        const settings = applyDefaults(stored.conversionSettings as Partial<ConversionSettings> | undefined);
 
-      const elapsed = Date.now() - start;
+        const metadata = extractMetadata(document, url);
+        const article = extractArticle(document);
 
-      if (article) {
-        const { markdown, imageMap } = convertToMarkdown(article.content);
+        const elapsed = Date.now() - start;
 
-        logger.info('content-script', 'Extraction succeeded', {
-          title: article.title,
-          contentLength: article.content.length,
-          images: Object.keys(imageMap).length,
-          elapsed,
-        });
+        if (article) {
+          const { markdown, imageMap } = convertToMarkdown(article.content, settings);
 
-        const result: ExtractionResult = {
-          type: 'archive-page',
-          article,
-          markdown,
-          imageMap,
-          metadata,
-          sourceUrl: url,
-        };
-        browser.runtime.sendMessage(result);
-      } else {
-        logger.info('content-script', 'Extraction failed', { url, elapsed });
+          logger.info('content-script', 'Extraction succeeded', {
+            title: article.title,
+            contentLength: article.content.length,
+            images: Object.keys(imageMap).length,
+            elapsed,
+          });
 
-        const failure: ExtractionFailure = {
-          type: 'extraction-failed',
-          url,
-          reason: 'Readability could not extract article content from this page.',
-        };
-        browser.runtime.sendMessage(failure);
-      }
+          const result: ExtractionResult = {
+            type: 'archive-page',
+            article,
+            markdown,
+            imageMap,
+            metadata,
+            sourceUrl: url,
+          };
+          browser.runtime.sendMessage(result);
+        } else {
+          logger.info('content-script', 'Extraction failed', { url, elapsed });
+
+          const failure: ExtractionFailure = {
+            type: 'extraction-failed',
+            url,
+            reason: 'Readability could not extract article content from this page.',
+          };
+          browser.runtime.sendMessage(failure);
+        }
+      })();
     });
   },
 });
