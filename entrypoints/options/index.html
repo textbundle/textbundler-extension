@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>TextBundler Options</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 480px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .field {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    select {
+      width: 100%;
+      padding: 0.375rem 0.5rem;
+      font-size: 0.875rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>TextBundler Options</h1>
+  <div class="field">
+    <label for="figureStyle">Figures</label>
+    <select id="figureStyle">
+      <option value="markdown">Markdown</option>
+      <option value="html">HTML</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="tableStyle">Tables</label>
+    <select id="tableStyle">
+      <option value="markdown">Markdown</option>
+      <option value="html">HTML</option>
+    </select>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

@@ -15,7 +15,11 @@ The web is ephemeral. Studies show that the average lifespan of a web page is ap
 
 ## Common Formats
 
-<table><thead><tr><th>Format</th><th>Extension</th><th>Self-contained</th></tr></thead><tbody><tr><td>TextBundle</td><td>.textpack</td><td>Yes</td></tr><tr><td>MHTML</td><td>.mhtml</td><td>Yes</td></tr><tr><td>WARC</td><td>.warc</td><td>Yes</td></tr></tbody></table>
+| Format | Extension | Self-contained |
+| --- | --- | --- |
+| TextBundle | .textpack | Yes |
+| MHTML | .mhtml | Yes |
+| WARC | .warc | Yes |
 
 ## Implementation Example
 
@@ -33,7 +37,8 @@ async function archivePage(url) {
 
 Images require special handling. Here is an example of a figure with a caption:
 
-<figure><img src="assets/image-001.png" alt="Web archiving pipeline diagram"><figcaption>Figure 1: The web archiving pipeline from capture to storage.</figcaption></figure>
+![Web archiving pipeline diagram](assets/image-001.png)
+*Figure 1: The web archiving pipeline from capture to storage.*
 
 > [!TIP]
 > Always download images in parallel to reduce total archiving time.
