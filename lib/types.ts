@@ -69,3 +69,8 @@ export interface ArchiveResponse {
   error?: string;
   filename?: string;
 }
+
+export interface ConversionSettings {
+  figureStyle: 'markdown' | 'html';
+  tableStyle: 'markdown' | 'html';
+}
