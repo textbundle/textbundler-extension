@@ -82,21 +82,13 @@ npm run zip:safari       # Safari (for Xcode import)
 
 Artifacts are written to the project root (e.g. `textbundler-1.0.1-chrome.zip`).
 
-### 5. Create a GitHub Release
+### 5. Push the Tag
 
 ```bash
 git push origin main --tags
 ```
 
-Then create a release on GitHub, attaching the built artifacts:
-
-```bash
-gh release create v1.0.1 \
-  textbundler-*-chrome.zip \
-  textbundler-*-firefox.zip \
-  --title "v1.0.1" \
-  --generate-notes
-```
+CI automatically runs tests, builds Chrome and Firefox packages, and creates a GitHub Release with the `.zip` files attached (see `.github/workflows/ci.yml`). Users can download the extension directly from the [Releases](../../releases) page.
 
 ### 6. Submit to Browser Stores
 
