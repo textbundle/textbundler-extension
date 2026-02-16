@@ -131,6 +131,17 @@ npm run test -- --run slug
 2. Click the TextBundler toolbar icon, or right-click → "Archive Page as TextBundle"
 3. The extension extracts the article, converts it to Markdown, downloads images, and packages everything into a `.textpack` file
 
+### Settings
+
+Right-click the extension icon → **Manage Extension** → **Options** (or open `about:addons` in Firefox → TextBundler → Preferences).
+
+| Setting | Options | Default | Effect |
+|---------|---------|---------|--------|
+| **Figures** | Markdown / HTML | Markdown | Markdown: `![alt](path)` + `*caption*`. HTML: raw `<figure>` preserved. |
+| **Tables** | Markdown / HTML | Markdown | Markdown: GFM pipe tables (complex tables with colspan/rowspan fall back to HTML automatically). HTML: all tables preserved as raw HTML. |
+
+Settings are synced via `browser.storage.sync` and take effect on the next archive.
+
 ### Badge indicators
 
 - **`...`** (blue) — processing
