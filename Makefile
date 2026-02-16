@@ -4,7 +4,9 @@ SAFARI_XCODE := $(CURDIR)/xcode-safari
 CHROME_PROFILE := $(CURDIR)/.chrome-profile
 CHROME_TEST = $(shell ls -d "$(HOME)/.cache/puppeteer/chrome"/*/chrome-mac-arm64/*.app/Contents/MacOS/* 2>/dev/null | sort -V | tail -1)
 
-.PHONY: build build-firefox build-safari build-all test typecheck lint chrome chrome-clean firefox safari safari-xcode e2e clean ensure-chrome
+.PHONY: all build build-firefox build-safari build-all test typecheck lint chrome chrome-clean firefox safari safari-xcode e2e clean ensure-chrome
+
+all: build-all
 
 build:
 	npm run build
