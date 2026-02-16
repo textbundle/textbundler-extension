@@ -10,6 +10,16 @@ export default defineContentScript({
   registration: 'runtime',
   main() {
     browser.runtime.onMessage.addListener((message) => {
+      if (message?.type === 'download-file') {
+        const a = document.createElement('a');
+        a.href = message.dataUrl;
+        a.download = message.filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+      }
+
       if (message?.type !== 'trigger-archive') return;
 
       const start = Date.now();

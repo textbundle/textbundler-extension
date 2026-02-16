@@ -20,6 +20,7 @@ export default defineBackground(() => {
   }
 
   function showNotification(message: string): void {
+    if (!browser.notifications?.create) return;
     browser.notifications.create({
       type: 'basic',
       iconUrl: browser.runtime.getURL('/icon/128.png'),

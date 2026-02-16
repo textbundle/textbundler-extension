@@ -1,11 +1,9 @@
 import { logger } from './logger';
 
-type DownloadChangedCallback = Parameters<typeof browser.downloads.onChanged.addListener>[0];
-
 /**
  * Trigger a browser download for the given blob with the specified filename.
- * Uses URL.createObjectURL when available (Firefox, Chrome 116+), falling back
- * to data URL conversion for older Chrome service workers.
+ * Uses browser.downloads API when available (Chrome, Firefox), falling back
+ * to anchor-click download for Safari which lacks the downloads API.
  * Revokes the object URL via browser.downloads.onChanged listener once the
  * download begins (not a timeout). DD-05, FR-005, INT-003.
  *
@@ -14,6 +12,14 @@ type DownloadChangedCallback = Parameters<typeof browser.downloads.onChanged.add
  * @returns Promise that resolves when the download is initiated
  */
 export async function triggerDownload(blob: Blob, filename: string): Promise<void> {
+  if (!browser.downloads?.download) {
+    logger.info('download-trigger', 'browser.downloads not available, using anchor fallback (Safari)');
+    await anchorDownload(blob, filename);
+    return;
+  }
+
+  type DownloadChangedCallback = Parameters<typeof browser.downloads.onChanged.addListener>[0];
+
   if (typeof URL.createObjectURL === 'function') {
     const objectUrl = URL.createObjectURL(blob);
     logger.debug('download-trigger', 'Created object URL for download', { filename });
@@ -60,4 +66,32 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to convert blob to data URL'));
     reader.readAsDataURL(blob);
   });
+}
+
+/**
+ * Safari fallback: send a message to the content script to perform
+ * an anchor-click download, since background scripts cannot create DOM elements.
+ * Falls back to opening a blob URL in a new tab if messaging fails.
+ */
+async function anchorDownload(blob: Blob, filename: string): Promise<void> {
+  const dataUrl = await blobToDataUrl(blob);
+
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  if (tab?.id) {
+    try {
+      await browser.tabs.sendMessage(tab.id, {
+        type: 'download-file',
+        dataUrl,
+        filename,
+      });
+      logger.info('download-trigger', 'Anchor download via content script', { filename });
+      return;
+    } catch {
+      logger.info('download-trigger', 'Content script messaging failed, opening blob in new tab');
+    }
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  await browser.tabs.create({ url: objectUrl });
+  logger.info('download-trigger', 'Opened blob URL in new tab', { filename });
 }
