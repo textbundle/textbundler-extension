@@ -1,18 +1,66 @@
-# Review Notes: TASK-020
+# Code Review: feat/configurable-figure-table-defaults-settings-infra
 
-## Observations Carried Forward
+**Task:** configurable-figure-table-defaults (OpenSpec): Task Group 1 — Types and Settings Infrastructure
+**Reviewer:** Code Reviewer Agent
+**Date:** 2026-02-16
+**Verdict:** REQUEST CHANGES
 
-**O-1: Fetch mock design**
-The mock function correctly handles URL, URL object, and Request input types. The conditional branching properly extracts the URL string from each type, and the responses correctly simulate both successful PNG downloads (with Content-Type header) and 404 failures.
+---
 
-**O-2: Manual imageMap modification pattern**
-The test manually adds a second image to the imageMap to simulate the failure scenario. This is an intentional and appropriate pattern for testing the failure path, since convertToMarkdown only discovers images actually present in the HTML fixture. The synthetic addition enables testing of the failed image patching workflow.
+## Summary
 
-**O-3: Asset filename handling across the pipeline**
-The test correctly accounts for the design pattern where convertToMarkdown returns filenames with `assets/` prefix in the imageMap, downloadImages preserves these prefixes in returned assets, and then the test strips them before passing to packageBundle (which expects unprefixed filenames and adds the `assets/` prefix internally at line 44 of bundle-packager.ts). This design is consistent with existing tests in image-downloader.test.ts.
+This branch implements the settings infrastructure for the configurable figure/table defaults feature: a `ConversionSettings` type, default values, and a merge helper. All tests pass and TypeScript checks out. However, the two exported symbols (`DEFAULT_CONVERSION_SETTINGS` constant and `applyDefaults()` function) are missing required JSDoc comments per project conventions. This is a blocking issue that must be addressed before merge.
 
-**O-4: Comprehensive spec requirement coverage**
-All 12 requirements from the task description are directly addressed: HTML parsing, extraction, metadata, Markdown conversion, fetch mocking with success/404 paths, image downloading, failed asset patching, frontmatter generation, packaging, zip structure validation, failed image URL restoration, content leakage checks, and the null extraction failure case.
+---
+
+## Validation Gates
+
+```
+npm test:                PASS (197 tests, 13 suites)
+npm run typecheck:       PASS
+```
+
+---
+
+## Checklist Results
+
+- Acceptance Criteria: PASS
+- Type Contracts: PASS
+- Module Conventions: PASS (except documentation)
+- Testing: PASS
+- Golden File Conventions: N/A
+- Data Conventions: N/A
+- Code Quality: PASS
+- Documentation: ISSUES FOUND
+- Git Hygiene: PASS
+- OpenSpec Compliance: PASS
+
+---
+
+## Findings
+
+### Blocking
+
+**B-1: Missing JSDoc comments on exported symbols**
+- **File:** `lib/conversion-settings.ts:3` and `lib/conversion-settings.ts:8`
+- **Issue:** `DEFAULT_CONVERSION_SETTINGS` constant and `applyDefaults()` function are exported but lack JSDoc comments with purpose, parameters, return value, and spec/requirement references.
+- **Spec:** CLAUDE.md Code Documentation section — "Every exported function gets a JSDoc comment with purpose, parameters, return value, and spec section / requirement ID"
+- **Fix:** Add JSDoc comments to both exports. For `DEFAULT_CONVERSION_SETTINGS`, document the default Markdown mode for both figures and tables. For `applyDefaults()`, document that it merges partial settings with defaults, returns a complete `ConversionSettings` object, and reference task group 1 from the OpenSpec change.
+
+### Non-Blocking
+
+None.
+
+### Observations
+
+**O-1: applyDefaults merge logic**
+The `applyDefaults()` implementation correctly uses object spread to merge defaults with partial overrides, handling `undefined` input gracefully. The six test cases comprehensively cover default fallback, empty object, partial merges (both fields), and full passthrough scenarios.
+
+**O-2: ConversionSettings type placement**
+The `ConversionSettings` interface placement in `lib/types.ts` is correct per spec Section 4.2, and the type definition matches the design artifact exactly (`figureStyle` and `tableStyle` as `'markdown' | 'html'`).
+
+**O-3: Foundation for downstream tasks**
+This foundational infrastructure work is well-positioned for downstream tasks (figure/table rule implementation in convertToMarkdown, content script integration, and options page).
 
 ### Prior Tasks
 
@@ -22,3 +70,9 @@ All 12 requirements from the task description are directly addressed: HTML parsi
 - TASK-012a: VIDEO_HOSTS regex covers major platforms. tableChildren rule prevents GFM recursion.
 - TASK-004a / TASK-011: Readability demotes h1 to h2 in its output. Golden files reflect this behavior.
 - TASK-004: non-article.html uses redirect page pattern for Readability null extraction testing.
+
+---
+
+## Verdict Rationale
+
+The implementation correctly satisfies all acceptance criteria and technical requirements from Task Group 1. Documentation comments are the only issue — add JSDoc to both `DEFAULT_CONVERSION_SETTINGS` and `applyDefaults()` referencing the design/spec sections, then resubmit.
