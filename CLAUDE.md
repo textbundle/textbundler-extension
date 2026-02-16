@@ -97,7 +97,23 @@ Critical path: TASK-001 → 003 → 004 → 011 → 004a → 012a → 012b → 0
 - If not on `main` when starting, continue the current branch (unfinished task)
 - Atomic commits — ideally one per acceptance criteria checkbox
 - Commit messages reference the task ID: `feat(task-001): initialize WXT project scaffold`
-- Run `npm test` and `npm run typecheck` before every commit — never commit broken code
+- Always merge with `--no-ff` (merge commit, never fast-forward)
+- Run `npm test` and `npm run build` before every commit — never commit broken code
+
+## Releases
+
+Release process is documented in `CONTRIBUTING.md`. The short version:
+
+1. `npm version patch|minor|major` — bumps `package.json`, creates commit + `v*` tag
+2. Update `CHANGELOG.md` following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format (categories: Added, Changed, Deprecated, Removed, Fixed, Security)
+3. `git push origin main --tags` — CI (`release.yml`) builds Chrome + Firefox zips and creates a GitHub Release with downloadable artifacts
+
+The changelog and version bump should be in the same commit or tag. Always update the changelog before releasing.
+
+## CI
+
+- `.github/workflows/ci.yml` — runs tests + typecheck on push to `main` and PRs
+- `.github/workflows/release.yml` — triggered by `v*` tag push; runs tests, then builds and publishes Chrome/Firefox `.zip` artifacts to GitHub Releases
 
 ## Task Execution
 
