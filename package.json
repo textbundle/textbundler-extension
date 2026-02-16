@@ -3,7 +3,7 @@
   "description": "Capture web pages as self-contained Markdown archives in TextBundle .textpack format",
   "license": "GPL-3.0-only",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
