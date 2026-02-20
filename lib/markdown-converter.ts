@@ -18,6 +18,51 @@ function extractExtension(url: string): string {
   return '.jpg';
 }
 
+const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|avif|svg|bmp|tiff?)$/i;
+
+function extractBasename(url: string): string | null {
+  try {
+    const rawPathname = new URL(url).pathname;
+    let pathname: string;
+    try {
+      pathname = decodeURIComponent(rawPathname);
+    } catch {
+      pathname = rawPathname;
+    }
+    const segments = pathname.split('/');
+    let lastSegment = segments.pop() || '';
+    if (!lastSegment) lastSegment = segments.pop() || '';
+    const lastDot = lastSegment.lastIndexOf('.');
+    const name = lastDot > 0 ? lastSegment.slice(0, lastDot) : lastSegment;
+    const sanitized = name
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return sanitized || null;
+  } catch {
+    return null;
+  }
+}
+
+function isImageUrl(url: string): boolean {
+  try {
+    return IMAGE_EXT_RE.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
+}
+
+function resolveImageUrl(img: HTMLElement): string {
+  const src = img.getAttribute('src') || '';
+  const parent = img.parentElement;
+  if (parent?.nodeName === 'A') {
+    const href = parent.getAttribute('href');
+    if (href && isImageUrl(href)) return href;
+  }
+  return src;
+}
+
 function isComplexTable(node: HTMLElement): boolean {
   const cells = Array.from(node.querySelectorAll('td, th'));
   for (const cell of cells) {
@@ -49,15 +94,28 @@ export function convertToMarkdown(
 } {
   const resolvedSettings = settings ?? DEFAULT_CONVERSION_SETTINGS;
   const imageMap: ImageMap = {};
+  const usedFilenames = new Set<string>();
   let imageCounter = 0;
 
   function getAssetPath(originalUrl: string): string {
     if (imageMap[originalUrl]) return imageMap[originalUrl];
-    imageCounter++;
     const ext = extractExtension(originalUrl);
-    const filename = `assets/image-${String(imageCounter).padStart(3, '0')}${ext}`;
-    imageMap[originalUrl] = filename;
-    return filename;
+    let basename = extractBasename(originalUrl);
+    if (!basename) {
+      imageCounter++;
+      basename = `image-${String(imageCounter).padStart(3, '0')}`;
+    }
+    let candidate = `assets/${basename}${ext}`;
+    if (usedFilenames.has(candidate)) {
+      let suffix = 2;
+      while (usedFilenames.has(`assets/${basename}-${suffix}${ext}`)) {
+        suffix++;
+      }
+      candidate = `assets/${basename}-${suffix}${ext}`;
+    }
+    usedFilenames.add(candidate);
+    imageMap[originalUrl] = candidate;
+    return candidate;
   }
 
   const turndownService = new TurndownService({
@@ -154,9 +212,17 @@ export function convertToMarkdown(
         const el = node as HTMLElement;
         const imgs = Array.from(el.getElementsByTagName('img'));
         for (const img of imgs) {
-          const src = img.getAttribute('src');
-          if (src) {
-            img.setAttribute('src', getAssetPath(src));
+          const bestUrl = resolveImageUrl(img as HTMLElement);
+          if (bestUrl) {
+            const assetPath = getAssetPath(bestUrl);
+            img.setAttribute('src', assetPath);
+            const imgParent = img.parentElement;
+            if (imgParent?.nodeName === 'A') {
+              const href = imgParent.getAttribute('href');
+              if (href && isImageUrl(href)) {
+                imgParent.setAttribute('href', assetPath);
+              }
+            }
           }
         }
         return '\n\n' + el.outerHTML + '\n\n';
@@ -178,9 +244,9 @@ export function convertToMarkdown(
 
         let result = '';
         for (const img of imgs) {
-          const src = img.getAttribute('src') || '';
+          const bestUrl = resolveImageUrl(img as HTMLElement);
           const alt = img.getAttribute('alt') || '';
-          const assetPath = getAssetPath(src);
+          const assetPath = getAssetPath(bestUrl);
           result += `![${alt}](${assetPath})`;
         }
 
@@ -197,6 +263,28 @@ export function convertToMarkdown(
       replacement: () => '',
     });
   }
+
+  turndownService.addRule('linkedImage', {
+    filter: (node) => {
+      if (node.nodeName !== 'A') return false;
+      let ancestor = node.parentElement;
+      while (ancestor) {
+        if (ancestor.nodeName === 'FIGURE') return false;
+        ancestor = ancestor.parentElement;
+      }
+      const href = node.getAttribute('href');
+      if (!href || !isImageUrl(href)) return false;
+      const el = node as HTMLElement;
+      return el.querySelectorAll('img').length === 1;
+    },
+    replacement: (_content, node) => {
+      const el = node as HTMLElement;
+      const href = el.getAttribute('href')!;
+      const img = el.querySelector('img')!;
+      const alt = img.getAttribute('alt') || '';
+      return `![${alt}](${getAssetPath(href)})`;
+    },
+  });
 
   turndownService.addRule('image', {
     filter: (node) => {
@@ -218,6 +306,12 @@ export function convertToMarkdown(
   });
 
   const markdown = turndownService.turndown(html);
+
+  for (const url of Object.keys(imageMap)) {
+    if (!markdown.includes(imageMap[url])) {
+      delete imageMap[url];
+    }
+  }
 
   return { markdown, imageMap };
 }

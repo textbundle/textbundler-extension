@@ -37,7 +37,7 @@ async function archivePage(url) {
 
 Images require special handling. Here is an example of a figure with a caption:
 
-![Web archiving pipeline diagram](assets/image-001.png)
+![Web archiving pipeline diagram](assets/archive-diagram.png)
 *Figure 1: The web archiving pipeline from capture to storage.*
 
 > [!TIP]
