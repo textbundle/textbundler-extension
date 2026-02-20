@@ -31,11 +31,11 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     expect(metadata.author).toBe('Alex Johnson');
 
     const { markdown, imageMap } = convertToMarkdown(article!.content);
-    expect(markdown).toContain('assets/image-001.png');
-    expect(imageMap['https://example.com/images/archive-diagram.png']).toBe('assets/image-001.png');
+    expect(markdown).toContain('assets/archive-diagram.png');
+    expect(imageMap['https://example.com/images/archive-diagram.png']).toBe('assets/archive-diagram.png');
 
-    imageMap['https://example.com/images/missing.jpg'] = 'assets/image-002.jpg';
-    const markdownWithMissing = markdown + '\n\n![Missing image](assets/image-002.jpg)';
+    imageMap['https://example.com/images/missing.jpg'] = 'assets/missing.jpg';
+    const markdownWithMissing = markdown + '\n\n![Missing image](assets/missing.jpg)';
 
     const mockFetch = vi.fn((url: string | URL | Request) => {
       const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url;
@@ -67,19 +67,19 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     const successAsset = rawAssets.find((a) => a.originalUrl === 'https://example.com/images/archive-diagram.png');
     expect(successAsset).toBeDefined();
     expect(successAsset!.failed).toBe(false);
-    expect(successAsset!.filename).toBe('assets/image-001.png');
+    expect(successAsset!.filename).toBe('assets/archive-diagram.png');
     expect(successAsset!.mimeType).toBe('image/png');
     expect(successAsset!.data.byteLength).toBeGreaterThan(0);
 
     const failedAsset = rawAssets.find((a) => a.originalUrl === 'https://example.com/images/missing.jpg');
     expect(failedAsset).toBeDefined();
     expect(failedAsset!.failed).toBe(true);
-    expect(failedAsset!.filename).toBe('assets/image-002.jpg');
+    expect(failedAsset!.filename).toBe('assets/missing.jpg');
 
     const failedAssets = rawAssets.filter(a => a.failed);
     const successfulAssets = rawAssets.filter(a => !a.failed);
     const patchedMarkdown = patchFailedImageUrls(markdownWithMissing, imageMap, failedAssets);
-    expect(patchedMarkdown).not.toContain('assets/image-002.jpg');
+    expect(patchedMarkdown).not.toContain('assets/missing.jpg');
     expect(patchedMarkdown).toContain('https://example.com/images/missing.jpg');
 
     const fixedDate = new Date('2026-02-14T12:00:00Z');
@@ -110,8 +110,8 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
 
     expect(files).toContain(`${dir}/info.json`);
     expect(files).toContain(`${dir}/text.md`);
-    expect(files).toContain(`${dir}/assets/image-001.png`);
-    expect(files).not.toContain(`${dir}/assets/image-002.jpg`);
+    expect(files).toContain(`${dir}/assets/archive-diagram.png`);
+    expect(files).not.toContain(`${dir}/assets/missing.jpg`);
 
     const infoJsonContent = await zip.file(`${dir}/info.json`)!.async('string');
     const infoJson = JSON.parse(infoJsonContent);
@@ -133,7 +133,7 @@ describe('Full Pipeline Integration', { timeout: 10000 }, () => {
     expect(textMdContent).not.toContain('Copyright 2025');
     expect(textMdContent).toContain('https://example.com/images/missing.jpg');
 
-    const imageData = await zip.file(`${dir}/assets/image-001.png`)!.async('arraybuffer');
+    const imageData = await zip.file(`${dir}/assets/archive-diagram.png`)!.async('arraybuffer');
     expect(imageData.byteLength).toBeGreaterThan(0);
   });
 

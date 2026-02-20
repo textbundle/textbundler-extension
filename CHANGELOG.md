@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Orphan image recovery — images stripped by Readability (e.g., Flickity carousels) are collected from the full DOM and appended after a `---` separator
+- Linked full-size image support — when an `<img>` is wrapped in an `<a>` linking to a higher-resolution image, the linked version is downloaded instead
+- Original image filenames preserved in asset paths (sanitized, lowercase) instead of generic `image-NNN` numbering
+
+### Changed
+
+- Extracted shared image URL utilities (`extractExtension`, `extractBasename`, `isImageUrl`) into `lib/image-url-utils.ts`
+
 ## [1.2.1] - 2026-02-16
 
 ### Fixed

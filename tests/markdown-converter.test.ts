@@ -485,7 +485,7 @@ describe('convertToMarkdown', () => {
       const html =
         '<figure><img src="https://example.com/photo.jpg" alt="A photo"><figcaption>Caption text</figcaption></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('![A photo](assets/image-001.jpg)');
+      expect(markdown).toContain('![A photo](assets/photo.jpg)');
       expect(markdown).toContain('*Caption text*');
     });
 
@@ -493,7 +493,7 @@ describe('convertToMarkdown', () => {
       const html =
         '<figure><img src="https://example.com/photo.jpg" alt="A photo"><figcaption>Caption</figcaption></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('![A photo](assets/image-001.jpg)');
+      expect(markdown).toContain('![A photo](assets/photo.jpg)');
       expect(markdown).not.toContain('src="https://example.com/photo.jpg"');
     });
 
@@ -501,7 +501,7 @@ describe('convertToMarkdown', () => {
       const html =
         '<figure><img src="https://example.com/photo.png" alt="No caption"></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('![No caption](assets/image-001.png)');
+      expect(markdown).toContain('![No caption](assets/photo.png)');
       expect(markdown).not.toContain('*');
     });
 
@@ -509,7 +509,7 @@ describe('convertToMarkdown', () => {
       const html =
         '<figure><a href="https://example.com/gallery"><img src="https://example.com/photo.webp" alt="Linked"></a><figcaption>Click</figcaption></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('![Linked](assets/image-001.webp)');
+      expect(markdown).toContain('![Linked](assets/photo.webp)');
       expect(markdown).toContain('*Click*');
     });
 
@@ -518,7 +518,7 @@ describe('convertToMarkdown', () => {
         '<figure><img src="https://example.com/photo.jpg" alt="Test"></figure>';
       const { imageMap } = convertToMarkdown(html);
       expect(imageMap['https://example.com/photo.jpg']).toBe(
-        'assets/image-001.jpg',
+        'assets/photo.jpg',
       );
     });
 
@@ -538,13 +538,13 @@ describe('convertToMarkdown', () => {
         );
 
         expect(imageMap['https://example.com/images/photo1.jpg']).toBe(
-          'assets/image-001.jpg',
+          'assets/photo1.jpg',
         );
         expect(imageMap['https://example.com/images/photo2.png']).toBe(
-          'assets/image-002.png',
+          'assets/photo2.png',
         );
         expect(imageMap['https://example.com/images/photo3.webp']).toBe(
-          'assets/image-003.webp',
+          'assets/photo3.webp',
         );
       },
       10_000,
@@ -566,7 +566,7 @@ describe('convertToMarkdown', () => {
       const html =
         '<figure><img src="https://example.com/photo.jpg" alt="A photo"><figcaption>Caption</figcaption></figure>';
       const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
-      expect(markdown).toContain('src="assets/image-001.jpg"');
+      expect(markdown).toContain('src="assets/photo.jpg"');
       expect(markdown).not.toContain('src="https://example.com/photo.jpg"');
     });
 
@@ -575,7 +575,7 @@ describe('convertToMarkdown', () => {
         '<figure><img src="https://example.com/photo.png" alt="No caption"></figure>';
       const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
       expect(markdown).toContain('<figure>');
-      expect(markdown).toContain('src="assets/image-001.png"');
+      expect(markdown).toContain('src="assets/photo.png"');
       expect(markdown).toContain('</figure>');
     });
 
@@ -584,7 +584,7 @@ describe('convertToMarkdown', () => {
         '<figure><a href="https://example.com/gallery"><img src="https://example.com/photo.webp" alt="Linked"></a><figcaption>Click</figcaption></figure>';
       const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
       expect(markdown).toContain('<a href="https://example.com/gallery">');
-      expect(markdown).toContain('src="assets/image-001.webp"');
+      expect(markdown).toContain('src="assets/photo.webp"');
     });
 
     it('populates imageMap for figure images in HTML mode', () => {
@@ -592,7 +592,7 @@ describe('convertToMarkdown', () => {
         '<figure><img src="https://example.com/photo.jpg" alt="Test"></figure>';
       const { imageMap } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
       expect(imageMap['https://example.com/photo.jpg']).toBe(
-        'assets/image-001.jpg',
+        'assets/photo.jpg',
       );
     });
   });
@@ -601,14 +601,14 @@ describe('convertToMarkdown', () => {
     it('rewrites standalone img src to assets/ path', () => {
       const html = '<p><img src="https://example.com/photo.jpg" alt="Photo"></p>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('![Photo](assets/image-001.jpg)');
+      expect(markdown).toContain('![Photo](assets/photo.jpg)');
     });
 
     it('populates imageMap for standalone images', () => {
       const html = '<p><img src="https://example.com/photo.jpg" alt="Photo"></p>';
       const { imageMap } = convertToMarkdown(html);
       expect(imageMap['https://example.com/photo.jpg']).toBe(
-        'assets/image-001.jpg',
+        'assets/photo.jpg',
       );
     });
 
@@ -618,10 +618,10 @@ describe('convertToMarkdown', () => {
         '<p><img src="https://example.com/image.webp" alt="WebP"></p>';
       const { imageMap } = convertToMarkdown(html);
       expect(imageMap['https://example.com/image.png']).toBe(
-        'assets/image-001.png',
+        'assets/image.png',
       );
       expect(imageMap['https://example.com/image.webp']).toBe(
-        'assets/image-002.webp',
+        'assets/image.webp',
       );
     });
 
@@ -630,7 +630,7 @@ describe('convertToMarkdown', () => {
         '<p><img src="https://example.com/image" alt="No ext"></p>';
       const { imageMap } = convertToMarkdown(html);
       expect(imageMap['https://example.com/image']).toBe(
-        'assets/image-001.jpg',
+        'assets/image.jpg',
       );
     });
 
@@ -639,25 +639,25 @@ describe('convertToMarkdown', () => {
         '<p><img src="https://example.com/api/image?id=123" alt="API"></p>';
       const { imageMap } = convertToMarkdown(html);
       expect(imageMap['https://example.com/api/image?id=123']).toBe(
-        'assets/image-001.jpg',
+        'assets/image.jpg',
       );
     });
 
-    it('uses 3-digit zero-padded counter', () => {
+    it('derives filenames from URL path', () => {
       const html =
         '<p><img src="https://example.com/a.jpg" alt=""></p>' +
         '<p><img src="https://example.com/b.jpg" alt=""></p>' +
         '<p><img src="https://example.com/c.jpg" alt=""></p>';
       const { imageMap } = convertToMarkdown(html);
-      expect(imageMap['https://example.com/a.jpg']).toBe('assets/image-001.jpg');
-      expect(imageMap['https://example.com/b.jpg']).toBe('assets/image-002.jpg');
-      expect(imageMap['https://example.com/c.jpg']).toBe('assets/image-003.jpg');
+      expect(imageMap['https://example.com/a.jpg']).toBe('assets/a.jpg');
+      expect(imageMap['https://example.com/b.jpg']).toBe('assets/b.jpg');
+      expect(imageMap['https://example.com/c.jpg']).toBe('assets/c.jpg');
     });
 
     it('handles empty alt text', () => {
       const html = '<p><img src="https://example.com/photo.jpg" alt=""></p>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('![](assets/image-001.jpg)');
+      expect(markdown).toContain('![](assets/photo.jpg)');
     });
   });
 
@@ -669,36 +669,36 @@ describe('convertToMarkdown', () => {
       const { imageMap } = convertToMarkdown(html);
       expect(Object.keys(imageMap)).toHaveLength(1);
       expect(imageMap['https://example.com/photo.jpg']).toBe(
-        'assets/image-001.jpg',
+        'assets/photo.jpg',
       );
     });
 
-    it('does not increment counter for duplicate URLs', () => {
+    it('assigns same filename for duplicate URLs', () => {
       const html =
         '<p><img src="https://example.com/a.jpg" alt=""></p>' +
         '<p><img src="https://example.com/a.jpg" alt=""></p>' +
         '<p><img src="https://example.com/b.jpg" alt=""></p>';
       const { imageMap } = convertToMarkdown(html);
-      expect(imageMap['https://example.com/a.jpg']).toBe('assets/image-001.jpg');
-      expect(imageMap['https://example.com/b.jpg']).toBe('assets/image-002.jpg');
+      expect(imageMap['https://example.com/a.jpg']).toBe('assets/a.jpg');
+      expect(imageMap['https://example.com/b.jpg']).toBe('assets/b.jpg');
     });
   });
 
-  describe('shared image counter (figures + standalone)', () => {
-    it('shares counter between figure images and standalone images', () => {
+  describe('image filename generation', () => {
+    it('assigns distinct filenames for figure and standalone images', () => {
       const html =
         '<p><img src="https://example.com/standalone.jpg" alt="Standalone"></p>' +
         '<figure><img src="https://example.com/fig.jpg" alt="Figure"></figure>';
       const { imageMap } = convertToMarkdown(html);
       expect(imageMap['https://example.com/standalone.jpg']).toBe(
-        'assets/image-001.jpg',
+        'assets/standalone.jpg',
       );
       expect(imageMap['https://example.com/fig.jpg']).toBe(
-        'assets/image-002.jpg',
+        'assets/fig.jpg',
       );
     });
 
-    it('resets counter between calls to convertToMarkdown', () => {
+    it('isolates filenames between calls to convertToMarkdown', () => {
       const html1 = '<p><img src="https://example.com/a.jpg" alt=""></p>';
       const html2 = '<p><img src="https://example.com/b.jpg" alt=""></p>';
 
@@ -706,11 +706,27 @@ describe('convertToMarkdown', () => {
       const result2 = convertToMarkdown(html2);
 
       expect(result1.imageMap['https://example.com/a.jpg']).toBe(
-        'assets/image-001.jpg',
+        'assets/a.jpg',
       );
       expect(result2.imageMap['https://example.com/b.jpg']).toBe(
-        'assets/image-001.jpg',
+        'assets/b.jpg',
       );
+    });
+
+    it('appends suffix for filename collisions', () => {
+      const html =
+        '<p><img src="https://a.com/photo.jpg" alt=""></p>' +
+        '<p><img src="https://b.com/photo.jpg" alt=""></p>';
+      const { imageMap } = convertToMarkdown(html);
+      expect(imageMap['https://a.com/photo.jpg']).toBe('assets/photo.jpg');
+      expect(imageMap['https://b.com/photo.jpg']).toBe('assets/photo-2.jpg');
+    });
+
+    it('falls back to counter for URLs without a usable filename', () => {
+      const html =
+        '<p><img src="https://example.com/" alt=""></p>';
+      const { imageMap } = convertToMarkdown(html);
+      expect(imageMap['https://example.com/']).toBe('assets/image-001.jpg');
     });
   });
 
@@ -718,7 +734,7 @@ describe('convertToMarkdown', () => {
     it('uses default settings when called without settings', () => {
       const html = '<figure><img src="https://example.com/photo.jpg" alt="A"><figcaption>Cap</figcaption></figure>';
       const { markdown } = convertToMarkdown(html);
-      expect(markdown).toContain('![A](assets/image-001.jpg)');
+      expect(markdown).toContain('![A](assets/photo.jpg)');
       expect(markdown).toContain('*Cap*');
     });
 
@@ -735,6 +751,85 @@ describe('convertToMarkdown', () => {
       const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
       expect(markdown).toContain('<figure>');
       expect(markdown).toMatch(/\|.*X.*\|/);
+    });
+  });
+
+  describe('linked full-size images', () => {
+    it('downloads linked full-size image instead of thumbnail', () => {
+      const html =
+        '<a href="https://example.com/full-res.jpg"><img src="https://example.com/thumb.jpg" alt="Photo"></a>';
+      const { markdown, imageMap } = convertToMarkdown(html);
+      expect(markdown).toContain('![Photo](assets/full-res.jpg)');
+      expect(imageMap['https://example.com/full-res.jpg']).toBe('assets/full-res.jpg');
+      expect(imageMap['https://example.com/thumb.jpg']).toBeUndefined();
+    });
+
+    it('preserves link when href is not an image URL', () => {
+      const html =
+        '<a href="https://example.com/gallery"><img src="https://example.com/thumb.jpg" alt="Photo"></a>';
+      const { markdown, imageMap } = convertToMarkdown(html);
+      expect(markdown).toContain('[![Photo](assets/thumb.jpg)](https://example.com/gallery)');
+      expect(imageMap['https://example.com/thumb.jpg']).toBe('assets/thumb.jpg');
+    });
+
+    it('handles various image extensions in href', () => {
+      const exts = ['png', 'webp', 'avif', 'gif', 'svg'];
+      for (const ext of exts) {
+        const html =
+          `<a href="https://example.com/full.${ext}"><img src="https://example.com/thumb.${ext}" alt="${ext}"></a>`;
+        const { imageMap } = convertToMarkdown(html);
+        expect(imageMap[`https://example.com/full.${ext}`]).toBe(`assets/full.${ext}`);
+      }
+    });
+
+    it('does not match linked image inside figure', () => {
+      const html =
+        '<figure><a href="https://example.com/full.jpg"><img src="https://example.com/thumb.jpg" alt="Photo"></a><figcaption>Cap</figcaption></figure>';
+      const { markdown, imageMap } = convertToMarkdown(html);
+      expect(markdown).toContain('![Photo](assets/full.jpg)');
+      expect(imageMap['https://example.com/full.jpg']).toBe('assets/full.jpg');
+    });
+
+    it('resolves linked image inside figure in HTML mode', () => {
+      const html =
+        '<figure><a href="https://example.com/full.jpg"><img src="https://example.com/thumb.jpg" alt="Photo"></a><figcaption>Cap</figcaption></figure>';
+      const { markdown, imageMap } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('src="assets/full.jpg"');
+      expect(markdown).toContain('href="assets/full.jpg"');
+      expect(imageMap['https://example.com/full.jpg']).toBe('assets/full.jpg');
+    });
+
+    it('preserves non-image link in figure HTML mode', () => {
+      const html =
+        '<figure><a href="https://example.com/gallery"><img src="https://example.com/photo.webp" alt="Linked"></a><figcaption>Click</figcaption></figure>';
+      const { markdown } = convertToMarkdown(html, { figureStyle: 'html', tableStyle: 'markdown' });
+      expect(markdown).toContain('<a href="https://example.com/gallery">');
+      expect(markdown).toContain('src="assets/photo.webp"');
+    });
+
+    it('does not match link with multiple images', () => {
+      const html =
+        '<a href="https://example.com/full.jpg"><img src="https://example.com/a.jpg" alt="A"><img src="https://example.com/b.jpg" alt="B"></a>';
+      const { markdown } = convertToMarkdown(html);
+      expect(markdown).not.toContain('assets/full.jpg');
+    });
+
+    it('deduplicates when href equals src', () => {
+      const html =
+        '<a href="https://example.com/photo.jpg"><img src="https://example.com/photo.jpg" alt="Same"></a>';
+      const { imageMap } = convertToMarkdown(html);
+      expect(Object.keys(imageMap)).toHaveLength(1);
+      expect(imageMap['https://example.com/photo.jpg']).toBe('assets/photo.jpg');
+    });
+
+    it('prunes phantom thumbnail entries from imageMap', () => {
+      const html =
+        '<a href="https://example.com/full-size.jpg"><img src="https://example.com/thumbnail.jpg" alt="A"></a>' +
+        '<p><img src="https://example.com/other.jpg" alt="B"></p>';
+      const { imageMap } = convertToMarkdown(html);
+      expect(imageMap['https://example.com/full-size.jpg']).toBeDefined();
+      expect(imageMap['https://example.com/other.jpg']).toBeDefined();
+      expect(imageMap['https://example.com/thumbnail.jpg']).toBeUndefined();
     });
   });
 });

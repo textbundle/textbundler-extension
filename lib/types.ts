@@ -74,3 +74,8 @@ export interface ConversionSettings {
   figureStyle: 'markdown' | 'html';
   tableStyle: 'markdown' | 'html';
 }
+
+export interface PageImage {
+  url: string;
+  alt: string;
+}
