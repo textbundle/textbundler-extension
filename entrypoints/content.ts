@@ -1,6 +1,8 @@
 import { extractArticle } from '@/lib/readability-runner';
 import { extractMetadata } from '@/lib/metadata-extractor';
 import { convertToMarkdown } from '@/lib/markdown-converter';
+import { collectPageImages } from '@/lib/page-image-collector';
+import { appendOrphanedImages } from '@/lib/orphan-image-appender';
 import { applyDefaults } from '@/lib/conversion-settings';
 import { logger } from '@/lib/logger';
 import type { ConversionSettings, ExtractionResult, ExtractionFailure } from '@/lib/types';
@@ -36,12 +38,19 @@ export default defineContentScript({
         const elapsed = Date.now() - start;
 
         if (article) {
-          const { markdown, imageMap } = convertToMarkdown(article.content, settings);
+          const converted = convertToMarkdown(article.content, settings);
+          const pageImages = collectPageImages(document, url);
+          const { markdown, imageMap } = appendOrphanedImages(
+            converted.markdown,
+            converted.imageMap,
+            pageImages,
+          );
 
           logger.info('content-script', 'Extraction succeeded', {
             title: article.title,
             contentLength: article.content.length,
             images: Object.keys(imageMap).length,
+            orphans: Object.keys(imageMap).length - Object.keys(converted.imageMap).length,
             elapsed,
           });
 
