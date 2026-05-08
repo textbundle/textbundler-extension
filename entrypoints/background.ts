@@ -10,7 +10,9 @@ export default defineBackground(() => {
   logger.info('background', 'Service worker started');
 
   const action = browser.action ?? browser.browserAction;
-  const menus = browser.contextMenus ?? (browser as any).menus;
+  const menus =
+    browser.contextMenus ??
+    (browser as unknown as { menus?: typeof browser.contextMenus }).menus;
 
   const processingTabs = new Set<number>();
 

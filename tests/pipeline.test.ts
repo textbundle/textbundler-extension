@@ -9,7 +9,6 @@ import { downloadImages } from '../lib/image-downloader';
 import { patchFailedImageUrls } from '../lib/image-patcher';
 import { buildFrontmatter } from '../lib/frontmatter-builder';
 import { packageBundle } from '../lib/bundle-packager';
-import type { ImageMap } from '../lib/types';
 
 describe('Full Pipeline Integration', { timeout: 10000 }, () => {
   afterEach(() => {
