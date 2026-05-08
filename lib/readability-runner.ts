@@ -32,11 +32,11 @@ export function extractArticle(document: Document): ArticleResult | null {
   });
 
   return {
-    title: parsed.title,
+    title: parsed.title ?? '',
     content: parsed.content,
-    textContent: parsed.textContent,
-    excerpt: parsed.excerpt,
+    textContent: parsed.textContent ?? '',
+    excerpt: parsed.excerpt ?? '',
     byline: parsed.byline ?? null,
-    length: parsed.length,
+    length: parsed.length ?? 0,
   };
 }

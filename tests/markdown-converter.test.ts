@@ -183,7 +183,7 @@ describe('convertToMarkdown', () => {
         const article = new Readability(doc).parse();
         expect(article).not.toBeNull();
 
-        const { markdown, imageMap } = convertToMarkdown(article!.content);
+        const { markdown, imageMap } = convertToMarkdown(article!.content!);
 
         expect(markdown).toMatch(/^## Main Heading$/m);
         expect(markdown).toMatch(/^## Subheading$/m);
@@ -258,7 +258,7 @@ describe('convertToMarkdown', () => {
         const article = new Readability(doc).parse();
         expect(article).not.toBeNull();
 
-        const { markdown } = convertToMarkdown(article!.content);
+        const { markdown } = convertToMarkdown(article!.content!);
         const expected = readFixture('html-table.expected.md');
 
         expect(normalizeMarkdown(markdown)).toBe(
@@ -384,7 +384,7 @@ describe('convertToMarkdown', () => {
         const article = new Readability(doc).parse();
         expect(article).not.toBeNull();
 
-        const { markdown } = convertToMarkdown(article!.content);
+        const { markdown } = convertToMarkdown(article!.content!);
         const expected = readFixture('details-summary.expected.md');
 
         expect(normalizeMarkdown(markdown)).toBe(
@@ -425,7 +425,7 @@ describe('convertToMarkdown', () => {
         const article = new Readability(doc).parse();
         expect(article).not.toBeNull();
 
-        const { markdown } = convertToMarkdown(article!.content);
+        const { markdown } = convertToMarkdown(article!.content!);
         const expected = readFixture('sup-sub.expected.md');
 
         expect(normalizeMarkdown(markdown)).toBe(
@@ -469,7 +469,7 @@ describe('convertToMarkdown', () => {
         const article = new Readability(doc).parse();
         expect(article).not.toBeNull();
 
-        const { markdown } = convertToMarkdown(article!.content);
+        const { markdown } = convertToMarkdown(article!.content!);
         const expected = readFixture('embedded-video.expected.md');
 
         expect(normalizeMarkdown(markdown)).toBe(
@@ -530,7 +530,7 @@ describe('convertToMarkdown', () => {
         const article = new Readability(doc).parse();
         expect(article).not.toBeNull();
 
-        const { markdown, imageMap } = convertToMarkdown(article!.content);
+        const { markdown, imageMap } = convertToMarkdown(article!.content!);
         const expected = readFixture('figure-caption.expected.md');
 
         expect(normalizeMarkdown(markdown)).toBe(

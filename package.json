@@ -22,23 +22,23 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
-    "@mozilla/readability": "^0.5.0",
+    "@mozilla/readability": "^0.6.0",
     "js-yaml": "^4.1.0",
     "jszip": "^3.10.1",
-    "turndown": "^7.2.0",
+    "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/turndown": "^5.0.5",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
-    "@typescript-eslint/parser": "^8.55.0",
-    "eslint": "^8.57.0",
-    "linkedom": "^0.18.0",
-    "prettier": "^3.3.0",
-    "puppeteer": "^24.37.3",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
+    "eslint": "^8.57.1",
+    "linkedom": "^0.18.12",
+    "prettier": "^3.8.3",
+    "puppeteer": "^24.43.0",
     "typescript": "^5.9.3",
-    "vitest": "^3.0.0",
-    "wxt": "^0.20.17"
+    "vitest": "^3.2.4",
+    "wxt": "^0.20.25"
   }
 }
