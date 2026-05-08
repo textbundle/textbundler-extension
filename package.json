@@ -17,7 +17,7 @@
     "test": "vitest",
     "test:sites": "vitest run tests/sites.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "postinstall": "wxt prepare"
   },
@@ -29,11 +29,13 @@
     "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/js-yaml": "^4.0.9",
     "@types/turndown": "^5.0.5",
     "@typescript-eslint/eslint-plugin": "^8.59.2",
     "@typescript-eslint/parser": "^8.59.2",
-    "eslint": "^8.57.1",
+    "eslint": "^10.3.0",
+    "globals": "^17.6.0",
     "linkedom": "^0.18.12",
     "prettier": "^3.8.3",
     "puppeteer": "^24.43.0",
