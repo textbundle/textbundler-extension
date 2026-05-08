@@ -24,6 +24,14 @@ export function extractArticle(document: Document): ArticleResult | null {
     return null;
   }
 
+  const MIN_TEXT_LENGTH = 250;
+  if ((parsed.length ?? 0) < MIN_TEXT_LENGTH) {
+    logger.info('readability-runner', 'Content too short, treating as non-article', {
+      length: parsed.length,
+    });
+    return null;
+  }
+
   const imageCount = (parsed.content.match(/<img[\s>]/gi) ?? []).length;
   logger.info('readability-runner', 'Extraction complete', {
     title: parsed.title,

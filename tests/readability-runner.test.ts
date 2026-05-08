@@ -53,4 +53,13 @@ describe('extractArticle', { timeout: 10000 }, () => {
     const result = extractArticle(doc);
     expect(result).toBeNull();
   });
+
+  it('returns null when extracted content is below the min-length threshold', () => {
+    const html = `<html><head><title>Short</title></head><body>
+      <article><p>Just a brief sentence with not much to say.</p></article>
+    </body></html>`;
+    const doc = parseHTML(html);
+    const result = extractArticle(doc);
+    expect(result).toBeNull();
+  });
 });
