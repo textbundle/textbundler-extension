@@ -38,7 +38,7 @@ describe.skipIf(!fixturesExist)('Tier 2 site smoke tests', () => {
           const article = extractArticle(document);
           expect(article).toBeNull();
         },
-        { timeout: 10_000 },
+        10_000,
       );
     } else {
       it(
@@ -51,7 +51,7 @@ describe.skipIf(!fixturesExist)('Tier 2 site smoke tests', () => {
           expect(article!.title).toBeTruthy();
           expect(article!.content).toBeTruthy();
         },
-        { timeout: 10_000 },
+        10_000,
       );
 
       it(
@@ -64,7 +64,7 @@ describe.skipIf(!fixturesExist)('Tier 2 site smoke tests', () => {
           expect(metadata.title).toBeTruthy();
           expect(metadata.url).toBe(url);
         },
-        { timeout: 10_000 },
+        10_000,
       );
 
       it(
@@ -80,7 +80,7 @@ describe.skipIf(!fixturesExist)('Tier 2 site smoke tests', () => {
           expect(markdown).not.toMatch(/<header[\s>]/i);
           expect(markdown).not.toMatch(/<footer[\s>]/i);
         },
-        { timeout: 10_000 },
+        10_000,
       );
 
       it(
@@ -100,7 +100,7 @@ describe.skipIf(!fixturesExist)('Tier 2 site smoke tests', () => {
           expect(parsed).toBeDefined();
           expect(typeof parsed).toBe('object');
         },
-        { timeout: 10_000 },
+        10_000,
       );
     }
   }
