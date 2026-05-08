@@ -37,7 +37,7 @@
     "linkedom": "^0.18.12",
     "prettier": "^3.8.3",
     "puppeteer": "^24.43.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vitest": "^3.2.4",
     "wxt": "^0.20.25"
   }
