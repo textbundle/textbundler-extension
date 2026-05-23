@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-05-23
+
+### Fixed
+
+- Readability heuristic now rejects list-shaped pages (search results, link dumps) by requiring at least one paragraph of 140+ characters. Closes a gap where Readability 0.6 extracted multi-snippet pages above the existing 250-char total-length floor and produced near-empty `.textpack` archives.
+- Short non-article extractions (e.g., HN comment threads) treated as failed extraction instead of generating empty bundles (carry-over from 1.3.0 dev branch).
+
+### Changed
+
+- Dependency updates: `@mozilla/readability` 0.6, TypeScript 6, Vitest 4, ESLint 10 (flat config), `puppeteer` 25, plus in-range minor/patch bumps.
+
 ## [1.3.0] - 2026-02-20
 
 ### Added
