@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — TextBundler</title>
+  <meta name="description" content="TextBundler privacy policy. The extension does not collect, transmit, or share any personal data.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow"><a href="index.html">TextBundler</a></span>
+      <h1>Privacy Policy</h1>
+      <p class="meta">Last updated: 2026-05-23</p>
+    </header>
+
+    <h2>Summary</h2>
+    <p>
+      TextBundler does not collect, transmit, sell, or share any personal data.
+      The extension has no analytics, no telemetry, no remote servers, and no
+      user accounts. Everything happens locally in your browser.
+    </p>
+
+    <h2>What the extension does</h2>
+    <p>
+      When you click the toolbar icon or use the context menu on the page you
+      are currently viewing, TextBundler:
+    </p>
+    <ol>
+      <li>Reads the HTML of the active tab to extract the article.</li>
+      <li>Downloads the images referenced by that article directly from their
+        original hosts, using your browser's normal network stack.</li>
+      <li>Converts the HTML to Markdown and packages it together with the
+        downloaded images into a <code>.textpack</code> file.</li>
+      <li>Saves that file via your browser's normal download mechanism.</li>
+    </ol>
+    <p>
+      Nothing is sent to the extension authors. Image requests go directly
+      from your browser to the same servers that hosted the article — exactly
+      as if you had right-clicked and saved each image yourself.
+    </p>
+
+    <h2>Permissions and why they exist</h2>
+    <dl>
+      <dt><code>activeTab</code> and <code>scripting</code></dt>
+      <dd>Inject the extraction script into the page you are viewing, only
+        when you explicitly invoke the extension.</dd>
+
+      <dt><code>downloads</code></dt>
+      <dd>Save the generated <code>.textpack</code> file to your downloads
+        folder.</dd>
+
+      <dt><code>contextMenus</code></dt>
+      <dd>Add the <em>Archive Page as TextBundle</em> entry to the right-click
+        menu.</dd>
+
+      <dt><code>notifications</code></dt>
+      <dd>Show a confirmation when an archive succeeds or fails.</dd>
+
+      <dt><code>storage</code></dt>
+      <dd>Store your extension preferences (figure and table output format).
+        Synced through your browser's built-in settings sync if you have it
+        enabled; never sent to any third party.</dd>
+
+      <dt>Host permissions</dt>
+      <dd>The extension fetches images from the same hosts that served the
+        article you are archiving. It does not run scripts on arbitrary pages
+        in the background; the content script is injected on demand for the
+        single tab you invoke it on.</dd>
+    </dl>
+
+    <h2>Data the extension stores</h2>
+    <p>
+      The only data stored by the extension is your preferences (a couple of
+      formatting options). They live in your browser's extension storage. The
+      extension does not store browsing history, page contents, downloaded
+      archives, image data, URLs, or any identifier of any kind.
+    </p>
+
+    <h2>Third parties</h2>
+    <p>
+      None. The extension communicates with no third-party services. Image
+      downloads go directly to whichever servers the article links to — those
+      requests are governed by those servers' own privacy policies and your
+      browser's settings, not by TextBundler.
+    </p>
+
+    <h2>Children</h2>
+    <p>
+      TextBundler is a general-purpose archiving tool and is not directed at
+      children. It collects no information from anyone, including children
+      under 13.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+      Material changes to this policy will be published at this URL with an
+      updated <em>Last updated</em> date and noted in the project
+      <a href="https://github.com/textbundle/textbundler-extension/blob/main/CHANGELOG.md">changelog</a>.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Open an issue on
+      <a href="https://github.com/textbundle/textbundler-extension/issues">GitHub</a>
+      for any privacy-related question.
+    </p>
+
+    <footer>
+      <a href="index.html">Home</a> ·
+      <a href="https://github.com/textbundle/textbundler-extension">GitHub</a>
+    </footer>
+  </main>
+</body>
+</html>
