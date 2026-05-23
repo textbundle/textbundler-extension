@@ -38,7 +38,7 @@
     "globals": "^17.6.0",
     "linkedom": "^0.18.12",
     "prettier": "^3.8.3",
-    "puppeteer": "^24.43.0",
+    "puppeteer": "^25.0.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5",
     "wxt": "^0.20.25"
