@@ -32,6 +32,20 @@ export function extractArticle(document: Document): ArticleResult | null {
     return null;
   }
 
+  // Readability 0.6 (mozilla/readability#867) preserves short non-link
+  // paragraphs that 0.5 dropped, so list-shaped pages (search results, link
+  // dumps) clear the total-length floor with many short fragments. Real
+  // articles have at least one substantive paragraph; pages built from
+  // fragments do not.
+  const MIN_PARAGRAPH_LENGTH = 140;
+  const longestParagraph = findLongestParagraphLength(parsed.content);
+  if (longestParagraph < MIN_PARAGRAPH_LENGTH) {
+    logger.info('readability-runner', 'No substantive paragraph, treating as non-article', {
+      longestParagraph,
+    });
+    return null;
+  }
+
   const imageCount = (parsed.content.match(/<img[\s>]/gi) ?? []).length;
   logger.info('readability-runner', 'Extraction complete', {
     title: parsed.title,
@@ -47,4 +61,15 @@ export function extractArticle(document: Document): ArticleResult | null {
     byline: parsed.byline ?? null,
     length: parsed.length ?? 0,
   };
+}
+
+function findLongestParagraphLength(html: string): number {
+  let longest = 0;
+  const paragraphRegex = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = paragraphRegex.exec(html)) !== null) {
+    const text = match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    if (text.length > longest) longest = text.length;
+  }
+  return longest;
 }

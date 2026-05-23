@@ -76,9 +76,12 @@ describe.skipIf(!fixturesExist)('Tier 2 site smoke tests', () => {
           expect(article).not.toBeNull();
           const { markdown } = convertToMarkdown(article!.content);
           expect(markdown.length).toBeGreaterThan(0);
-          expect(markdown).not.toMatch(/<nav[\s>]/i);
-          expect(markdown).not.toMatch(/<header[\s>]/i);
-          expect(markdown).not.toMatch(/<footer[\s>]/i);
+          const withoutCode = markdown
+            .replace(/```[\s\S]*?```/g, '')
+            .replace(/`[^`\n]*`/g, '');
+          expect(withoutCode).not.toMatch(/<nav[\s>]/i);
+          expect(withoutCode).not.toMatch(/<header[\s>]/i);
+          expect(withoutCode).not.toMatch(/<footer[\s>]/i);
         },
         10_000,
       );
