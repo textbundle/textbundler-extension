@@ -92,6 +92,11 @@ CI automatically runs tests, builds Chrome and Firefox packages, and creates a G
 
 ### 6. Submit to Browser Stores
 
+Submission requires the privacy policy URL: <https://textbundle.github.io/textbundler-extension/privacy.html>
+(served from `docs/site/` via the **Publish Pages** workflow → `gh-pages` branch).
+After the first run of that workflow, set **Settings → Pages → Source = Deploy
+from a branch → `gh-pages` / `(root)`** in the GitHub repo once.
+
 **Firefox (AMO)**
 
 1. Go to [addons.mozilla.org/developers](https://addons.mozilla.org/en-US/developers/)

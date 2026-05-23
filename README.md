@@ -197,6 +197,11 @@ Two-context event-driven pipeline:
 - Packages into `.textpack` via JSZip
 - Triggers browser download
 
+## Privacy
+
+TextBundler collects no data and has no analytics. See the
+[privacy policy](https://textbundle.github.io/textbundler-extension/privacy.html).
+
 ## License
 
 Copyright (C) 2026 TextBundle Contributors

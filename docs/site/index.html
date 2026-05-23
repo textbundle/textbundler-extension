@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TextBundler — archive web pages as TextBundle .textpack</title>
+  <meta name="description" content="Cross-browser extension that captures web pages as self-contained Markdown archives in the TextBundle .textpack format.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow">Browser extension</span>
+      <h1>TextBundler</h1>
+    </header>
+
+    <p>
+      TextBundler captures the article on the current web page and saves it
+      as a self-contained <a href="https://textbundle.org/">TextBundle</a>
+      <code>.textpack</code> archive — Markdown body plus all referenced
+      images, packaged into a single file you can drop into any TextBundle-
+      aware editor.
+    </p>
+
+    <h2>How it works</h2>
+    <ol>
+      <li>Click the toolbar icon, or right-click and choose <em>Archive Page as TextBundle</em>.</li>
+      <li>Mozilla Readability extracts the main article from the current page.</li>
+      <li>The HTML is converted to Markdown, images are downloaded, and everything is zipped into a <code>.textpack</code> file.</li>
+      <li>Your browser downloads the file to your default downloads folder.</li>
+    </ol>
+
+    <h2>Install</h2>
+    <p>
+      Pre-built <code>.zip</code> packages for Chrome and Firefox are attached
+      to every <a href="https://github.com/textbundle/textbundler-extension/releases">GitHub release</a>.
+      Store listings are in preparation.
+    </p>
+
+    <h2>Source</h2>
+    <p>
+      TextBundler is free software released under the GPL-3.0-only license.
+      Source, issue tracker, and contribution guide live on
+      <a href="https://github.com/textbundle/textbundler-extension">GitHub</a>.
+    </p>
+
+    <h2>Privacy</h2>
+    <p>
+      TextBundler does not collect, transmit, or share any personal data.
+      See the <a href="privacy.html">privacy policy</a> for details.
+    </p>
+
+    <footer>
+      <a href="https://github.com/textbundle/textbundler-extension">GitHub</a> ·
+      <a href="privacy.html">Privacy</a>
+    </footer>
+  </main>
+</body>
+</html>
